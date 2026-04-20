@@ -42,6 +42,10 @@ let totalSignalsProcessed = 0;
 
 // Handle Socket Connections
 io.on('connection', (socket) => {
+  socket.on('register_browser_node', (data) => {
+    const { ownerKey, name, models } = data;
+    const apiKey = ownerKey || uuidv4();
+    
     // 1. Get or create node from persistent state
     const state = getState();
     const existingNode = state.nodes.find(n => n.id === apiKey);
