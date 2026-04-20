@@ -62,10 +62,39 @@ function init() {
   }
 
   // Event Listeners
-  setupIdentityBtn.addEventListener('click', () => {
-    idResult.style.display = 'none';
-    idNameInput.value = operatorName;
-    identityModal.classList.add('active');
+  // Sidebar Toggles
+  const leftSidebar = document.getElementById('left-sidebar');
+  const rightSidebar = document.getElementById('right-sidebar');
+  const toggleLeftBtn = document.getElementById('toggle-left-btn');
+  const toggleRightBtn = document.getElementById('toggle-right-btn');
+  const zenChatBtn = document.getElementById('zen-chat-btn');
+  const app = document.getElementById('app');
+
+  toggleLeftBtn.addEventListener('click', () => {
+    leftSidebar.classList.toggle('collapsed');
+    toggleLeftBtn.innerText = leftSidebar.classList.contains('collapsed') ? '⟩' : '⟨';
+  });
+
+  toggleRightBtn.addEventListener('click', () => {
+    rightSidebar.classList.toggle('collapsed');
+    toggleRightBtn.innerText = rightSidebar.classList.contains('collapsed') ? '⟨' : '⟩';
+  });
+
+  zenChatBtn.addEventListener('click', () => {
+    app.classList.toggle('zen-mode');
+    if (app.classList.contains('zen-mode')) {
+      // Add a way to exit zen mode if we hid the toggles
+      const exitBtn = document.createElement('button');
+      exitBtn.id = 'exit-zen-btn';
+      exitBtn.innerText = 'EXIT ZEN MODE';
+      exitBtn.className = 'mini-btn';
+      exitBtn.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 10000; background: var(--status-offline); color: white;';
+      exitBtn.onclick = () => {
+        app.classList.remove('zen-mode');
+        exitBtn.remove();
+      };
+      document.body.appendChild(exitBtn);
+    }
   });
 
   idCancelBtn.addEventListener('click', () => identityModal.classList.remove('active'));
