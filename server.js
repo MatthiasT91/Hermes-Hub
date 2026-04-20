@@ -36,8 +36,9 @@ function getState() {
 }
 
 // 🌐 WebSockets Model Pool
-const modelPool = new Map(); // key: apiKey, value: { socketId, name, models, status, approved, lastUsedByOwner, lastSeen }
-const pendingWebTasks = new Map(); // key: taskId, value: { resolve, reject, timer }
+const modelPool = new Map();
+const pendingWebTasks = new Map();
+let totalSignalsProcessed = 0;
 
 // Handle Socket Connections
 io.on('connection', (socket) => {
@@ -172,6 +173,7 @@ app.post('/v1/chat/completions', async (req, res) => {
     });
 
     const responseData = await taskPromise;
+    totalSignalsProcessed++;
 
     const latency = Date.now() - startTime;
     io.emit('signal_success', { id: signalId, latency, response: responseData });
@@ -246,7 +248,12 @@ function requireAdmin(req, res, next) {
 
 // 🏛️ Admin API
 app.get('/api/admin/pool', requireAdmin, (req, res) => {
-  res.json(getPoolList(true)); // Show ALL nodes including pending
+  res.json({
+    pool: getPoolList(true),
+    stats: {
+      totalSignals: totalSignalsProcessed
+    }
+  });
 });
 
 app.post('/api/admin/approve', requireAdmin, (req, res) => {

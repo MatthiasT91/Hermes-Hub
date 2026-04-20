@@ -169,21 +169,23 @@
           content.style.display = 'none';
           return;
         }
-        const pool = await res.json();
-        renderPool(pool);
+        const data = await res.json();
+        renderPool(data.pool, data.stats);
       } catch (e) {
         console.error('Load failed:', e);
       }
     }
 
-    function renderPool(pool) {
+    function renderPool(pool, stats) {
       const total = pool.length;
       const pending = pool.filter(n => !n.approved).length;
       const online = pool.filter(n => n.status === 'online').length;
+      const signals = stats?.totalSignals || 0;
 
       document.getElementById('stat-total').innerText = total;
       document.getElementById('stat-pending').innerText = pending;
       document.getElementById('stat-online').innerText = online;
+      document.getElementById('stat-signals').innerText = signals;
 
       const list = document.getElementById('node-list');
       if (pool.length === 0) {
