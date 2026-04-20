@@ -102,7 +102,7 @@ function init() {
 
   socket.on('registration_success', (data) => {
     apiKey = data.apiKey;
-    localStorage.setItem('hermes_hivemind_key', apiKey);
+    localStorage.setItem('hermes_collective_key', apiKey);
     
     joinResult.style.display = 'block';
     joinResult.style.background = 'rgba(0, 255, 157, 0.1)';
