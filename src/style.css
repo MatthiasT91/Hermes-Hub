@@ -216,6 +216,114 @@ body.active-donor .sidebar {
   color: var(--accent-gold);
 }
 
+/* --- Neural Mesh Visualizer --- */
+.neural-mesh {
+  flex: 1;
+  position: relative;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  padding: 2rem;
+  gap: 3rem;
+  perspective: 1000px;
+}
+
+.mesh-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(0deg, transparent 95%, rgba(0, 245, 255, 0.05) 100%);
+  background-size: 100% 4px;
+}
+
+.mesh-scan-line {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent-neon);
+  opacity: 0.1;
+  animation: scanline 8s linear infinite;
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* 👾 Pixel Bots */
+.pixel-bot {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: float 4s ease-in-out infinite;
+}
+
+.bot-sprite {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+  background: var(--accent-neon);
+  box-shadow: 
+    0 4px var(--accent-neon), 4px 0 var(--accent-neon), -4px 0 var(--accent-neon),
+    0 -4px var(--accent-neon), 4px 4px var(--accent-neon), -4px -4px var(--accent-neon);
+  border-radius: 2px;
+  position: relative;
+}
+
+.bot-sprite::after {
+  content: '';
+  position: absolute;
+  top: 6px; left: 4px;
+  width: 4px; height: 4px;
+  background: black;
+  box-shadow: 12px 0 black;
+}
+
+.bot-tag {
+  position: absolute;
+  bottom: -20px;
+  font-size: 0.5rem;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono';
+  white-space: nowrap;
+  background: rgba(0,0,0,0.5);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.pixel-bot.active .bot-sprite {
+  animation: thinking 0.3s infinite alternate;
+  box-shadow: 0 0 20px var(--accent-neon);
+}
+
+@keyframes thinking {
+  from { transform: scale(1); filter: brightness(1); }
+  to { transform: scale(1.1); filter: brightness(1.5); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.signal-beam {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-neon), transparent);
+  z-index: 5;
+  pointer-events: none;
+  filter: blur(1px);
+}
+
 .signal-stream {
   flex: 1;
   overflow-y: auto;
