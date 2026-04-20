@@ -122,12 +122,21 @@ function init() {
     joinResult.style.display = 'block';
     joinResult.style.background = 'rgba(0, 255, 157, 0.1)';
     joinResult.style.color = 'var(--status-online)';
-    joinResult.innerHTML = `✅ CONNECTION SECURED<br>Identity: ${operatorName}<br>Key: ${apiKey.substring(0,8)}...`;
+    joinResult.innerHTML = `
+      <div style="font-weight: 700; margin-bottom: 0.5rem;">✅ COLLECTIVE LINK SECURED</div>
+      <div style="font-size: 0.6rem; color: var(--text-secondary); margin-bottom: 0.3rem;">OPERATOR API KEY:</div>
+      <div style="background: rgba(0,0,0,0.5); padding: 0.8rem; border-radius: 4px; word-break: break-all; font-size: 0.7rem; color: var(--accent-gold); border: 1px solid var(--border-glass);">
+        ${apiKey}
+      </div>
+      <div style="font-size: 0.55rem; color: var(--text-muted); margin-top: 0.5rem;">Use this key as the Bearer Token in your Hermes/OpenClaw Agent config.</div>
+    `;
+    
+    joinSubmitBtn.innerText = 'LINK SECURED';
+    joinSubmitBtn.style.background = 'var(--status-online)';
     
     document.body.classList.add('active-donor');
     updateOnboardingUI();
-    
-    setTimeout(() => joinModal.classList.remove('active'), 2000);
+    // Modal stays open so user can copy the key. They can click Cancel/X to close.
   });
 
   socket.on('compute_task', handleComputeTask);
