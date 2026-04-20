@@ -15,6 +15,7 @@ services:
     container_name: cloudflared-tunnel
     image: cloudflare/cloudflared:latest
     restart: always
+    network_mode: service:hermes-hub
     env_file:
       - .env
     command: tunnel --no-autoupdate run

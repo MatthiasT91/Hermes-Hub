@@ -24,7 +24,6 @@ const io = new Server(httpServer, {
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 8080;
 const DATA_PATH = path.join(__dirname, 'network_state.json');
 
 // Initialize state
