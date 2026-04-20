@@ -16,6 +16,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
+const PORT = process.env.PORT || 8080;
 const io = new Server(httpServer, {
   cors: { origin: "*" }
 });
@@ -68,9 +69,9 @@ app.post('/v1/chat/completions', async (req, res) => {
     const startTime = Date.now();
     const response = await axios.post(`${activeNode.url}/chat/completions`, req.body, {
       headers: { 'Content-Type': 'application/json' },
-      timeout: 90000 
+      timeout: 90000
     });
-    
+
     const latency = Date.now() - startTime;
 
     // Emit 'Success/Intercepted'
@@ -104,7 +105,7 @@ app.post('/api/security/generate', (req, res) => {
   try {
     const newToken = uuidv4();
     const envContent = fs.readFileSync('.env', 'utf8');
-    
+
     // Replace or add HERMES_AUTH_TOKEN
     let newEnv;
     if (envContent.includes('HERMES_AUTH_TOKEN=')) {
@@ -112,10 +113,10 @@ app.post('/api/security/generate', (req, res) => {
     } else {
       newEnv = envContent + `\nHERMES_AUTH_TOKEN=${newToken}`;
     }
-    
+
     fs.writeFileSync('.env', newEnv);
     process.env.HERMES_AUTH_TOKEN = newToken; // Update in-memory for immediate effect
-    
+
     console.log(`🔐 NEW SECURITY KEY GENERATED VIA DASHBOARD`);
     res.json({ success: true, token: newToken });
   } catch (error) {
