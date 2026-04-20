@@ -162,12 +162,19 @@ function updateOnboardingUI() {
 
   if (document.body.classList.contains('active-donor')) {
     step3Card.classList.add('active');
-    pulseBtn.innerText = 'ONLINE';
-    pulseBtn.style.color = 'var(--status-online)';
+    step3Card.style.borderColor = 'var(--status-online)';
+    pulseBtn.innerText = 'RESCAN';
+    pulseBtn.style.color = 'var(--accent-neon)';
+    // Hide Step 2 when already connected
+    const step2 = step3Card.previousElementSibling;
+    if (step2) step2.style.display = 'none';
   } else {
     step3Card.classList.remove('active');
+    step3Card.style.borderColor = 'var(--border-glass)';
     pulseBtn.innerText = 'CONNECT';
     pulseBtn.style.color = 'var(--accent-gold)';
+    const step2 = step3Card.previousElementSibling;
+    if (step2) step2.style.display = 'flex';
   }
 }
 
