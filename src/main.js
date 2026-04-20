@@ -148,7 +148,60 @@ function init() {
   socket.on('signal_start', addSignalCard);
   socket.on('signal_success', (data) => updateSignalCard(data, 'SUCCESS'));
   socket.on('signal_error', (data) => updateSignalCard(data, 'ERROR'));
-  socket.on('pool_update', (pool) => renderPool(pool));
+  // Neural Mesh Rendering
+  const neuralMesh = document.getElementById('neural-mesh');
+  
+  function renderMesh() {
+    // Keep overlay and scanline
+    const overlay = neuralMesh.querySelector('.mesh-overlay');
+    neuralMesh.innerHTML = '';
+    neuralMesh.appendChild(overlay);
+
+    const nodes = document.querySelectorAll('.node-row'); // Use peer list to spawn bots
+    nodes.forEach(node => {
+      const name = node.querySelector('strong').innerText;
+      const id = node.dataset.id;
+      const isOnline = node.querySelector('.status-dot').classList.contains('status-online');
+      
+      if (isOnline) {
+        const bot = document.createElement('div');
+        bot.className = 'pixel-bot';
+        bot.id = `bot-${id}`;
+        bot.innerHTML = `
+          <div class="bot-sprite"></div>
+          <div class="bot-tag">${name}</div>
+        `;
+        neuralMesh.appendChild(bot);
+      }
+    });
+  }
+
+  socket.on('pool_update', (pool) => {
+    renderPool(pool);
+    updateModelSelect(pool);
+    renderMesh(); // Sync pixel mesh
+  });
+
+  socket.on('signal_start', (data) => {
+    const { targetId } = data;
+    const bot = document.getElementById(`bot-${targetId}`);
+    if (bot) {
+      bot.classList.add('active');
+      // Create a signal beam effect
+      const beam = document.createElement('div');
+      beam.className = 'signal-beam';
+      neuralMesh.appendChild(beam);
+      setTimeout(() => beam.remove(), 1000);
+    }
+  });
+
+  socket.on('signal_complete', (data) => {
+    const { targetId } = data;
+    const bot = document.getElementById(`bot-${targetId}`);
+    if (bot) {
+      bot.classList.remove('active');
+    }
+  });
 
   socket.on('registration_success', (data) => {
     apiKey = data.apiKey;
