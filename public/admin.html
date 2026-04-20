@@ -106,10 +106,39 @@
         <div class="stat-label">ONLINE</div>
         <div class="stat-value" id="stat-online" style="color: var(--status-online);">0</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-label">TOTAL SIGNALS</div>
+        <div class="stat-value" id="stat-signals" style="color: var(--accent-neon);">0</div>
+      </div>
     </div>
 
-    <h2 style="font-size: 0.8rem; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 1rem;">NETWORK NODES</h2>
-    <div id="node-list"></div>
+    <div style="display: flex; gap: 2rem;">
+      <div style="flex: 2;">
+        <h2 style="font-size: 0.8rem; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 1rem;">NETWORK NODES</h2>
+        <div id="node-list"></div>
+      </div>
+      
+      <div style="flex: 1;">
+        <h2 style="font-size: 0.8rem; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 1rem;">TREASURY & ENFORCEMENT</h2>
+        <div class="stat-card" style="background: rgba(255, 215, 0, 0.05); border: 1px solid var(--accent-gold); margin-bottom: 1rem;">
+          <div class="stat-label">MONETIZATION ENGINE</div>
+          <div style="font-size: 0.75rem; margin-top: 1rem; line-height: 1.5; color: var(--text-secondary);">
+            Global Credit Rate: <span style="color: var(--accent-gold);">0.00 Credits/Token</span>
+            <br>
+            Abuse Threshold: <span style="color: var(--status-offline);">50 req/min</span>
+          </div>
+          <button class="btn" style="width: 100%; margin-top: 1.5rem; background: var(--accent-gold); color: black; font-weight: 700;">UPDATE POLICY</button>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">ACCESS CONTROL</div>
+          <div style="margin-top: 1rem;">
+            <button class="btn" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.7rem;">PAUSE PUBLIC CHAT</button>
+            <button class="btn" style="width: 100%; font-size: 0.7rem;">CLEAR SIGNAL LOGS</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
