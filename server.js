@@ -218,10 +218,9 @@ app.get('/v1/models', (req, res) => {
   res.json({ object: 'list', data: allModels });
 });
 
-function getPoolList(includeAll = false) {
+function getPoolList() {
   const list = [];
   for (const [key, node] of modelPool) {
-    if (!includeAll && !node.approved) continue; // Only show approved nodes publicly
     list.push({
       id: key,
       name: node.name,

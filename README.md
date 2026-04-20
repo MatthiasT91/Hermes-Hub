@@ -1,32 +1,45 @@
-# 🏛️ Hermes Hub Deployment & Development
+# 🏛️ Hermes Hub: Distributed AI Gateway
 
-## 🚀 Deployment to Ubuntu (Proxmox LXC/VM)
-Using Docker on Ubuntu is the **gold standard** for this dashboard. It ensures your agents can't "break" the host OS.
+A secure, high-performance relay for local LLM agents. Hermes Hub enables a **Browser-Based Hivemind** where contributors donate GPU compute by simply leaving a dashboard tab open.
 
-1. **Get the Code**: Transfer this folder to your Ubuntu server (via Git, SFTP, or SCP).
+## 🚀 Deployment (Server-Side)
+Building the Hub requires Docker and a domain/tunnel (e.g., Cloudflare).
+
+1. **Environment Config**:
+   Copy `.env.example` to `.env` and set your `HERMES_AUTH_TOKEN`. This is your master password for the Admin Dashboard.
 2. **Launch**:
    ```bash
    chmod +x setup.sh
    ./setup.sh
    ```
-3. **Connectivity**: Your Local Hermes Agent should now use this as its API URL:
-   `https://hermes.localmodels.xyz/v1`
+3. **Admin Access**:
+   Access the node management panel at `https://your-domain.xyz/admin` using your `HERMES_AUTH_TOKEN`.
 
 ---
 
-## 🤖 Agent Customization "Building the Hub"
-Your agents can absolutely build onto this. Because we used **Vite** and **Vanilla JS**, it’s extremely easy for AI to understand and modify.
+## 🌐 Joining the Hivemind (Contributor)
+No port forwarding or tunnels required for contributors.
 
-### How agents should work on this:
-1. **File Access**: Ensure your agents have read/write access to this directory.
-2. **Modular Components**: Agents should create new `.js` files in `src/` for new features and import them into `main.js`.
-3. **Visual Iteration**: They can modify `style.css` to add new "Neon" glows or change the layout.
-4. **Tool Access**: Give your agents a tool that lets them run `npm run build` or `docker compose restart` after they make changes.
-
-### Ideas for Agents to build:
-- **Metrics Module**: An agent can add a dashboard section showing token usage/latency.
-- **Auto-Discovery**: An agent can write a script to auto-scan your network for new Cloudflare tunnels and add them to `localStorage`.
-- **Theme Switcher**: An agent can add a "Cosmic/Alchemist" toggle to change the visual vibe dynamically.
+1. **Local Setup**: Start your AI engine (Ollama, LM Studio, etc.).
+   *   *Note*: If using Ollama, you must set `OLLAMA_ORIGINS="*"` so the browser can talk to your GPU.
+2. **Setup Identity**: Visit the Hub, click **IDENTIFY**, and create your operator profile.
+3. **Pulse**: Click **CONNECT** to link your local models to the distributed network. Keep the tab open to remain online.
 
 ---
-*Hermes Hub is built to be an evolving organism. Let your fleet take the reins.*
+
+## 🛡️ The "Owner is King" Protocol
+The Hub implements an autonomous **5-Minute Priority Lock**:
+- **Owner Priority**: When you use your own local brain, the Hub grants you instant, exclusive access.
+- **Idle Sharing**: If your brain has been idle for more than 5 minutes, it is shared with the network (the Hivemind).
+- **Borrower Lock**: If someone tries to use your brain while you are active, they receive a `423 Locked` status until you stop for 5 minutes.
+
+---
+
+## 🛠️ Developer Integration
+The Hub presents a standard OpenAI-compatible `/v1` endpoint.
+
+- **Base URL**: `https://your-domain.xyz/v1`
+- **Authentication**: Use your Operator API Key (received during Pulse) as the Bearer Token.
+
+---
+*Built for the Hermes distributed network. Let the fleet evolve.*

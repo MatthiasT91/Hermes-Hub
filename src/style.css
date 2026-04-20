@@ -265,7 +265,14 @@ body.active-donor .sidebar {
 
 .empty-state {
   height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2rem; opacity: 0.4;
+  gap: 2rem; opacity: 0.15; color: var(--text-primary);
+}
+
+.modal { 
+  width: 450px; padding: 2.5rem; border-radius: 20px; 
+  background: rgba(8, 8, 12, 0.98);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(0, 245, 255, 0.05);
+  border: 1px solid rgba(0, 245, 255, 0.1);
 }
 
 .pulse-ring {
