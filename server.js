@@ -155,29 +155,13 @@ app.post('/v1/chat/completions', async (req, res) => {
 
   // 4. Proceed with WebSockets Compute Relay
   const taskId = uuidv4();
-  const signalId = taskId.substr(0, 8);
-
-  io.emit('signal_start', {
-    id: signalId,
-    timestamp: new Date().toISOString(),
-    node: targetNode.name,
-    request: req.body
-  });
-
-  try {
-    const startTime = Date.now();
-    
-    // Create the Promise to wait for the browser to run the model
-    const taskPromise = new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        pendingWebTasks.delete(taskId);
-        reject(new Error("Timeout: Browser node did not respond within 120 seconds."));
-      }, 120000); // 2 minute maximum wait time
-      pendingWebTasks.set(taskId, { resolve, reject, timer });
-    });
-
     // 7. Relay task to browser via socket (Using ID from pool for UI tracking)
-    io.emit('signal_start', { id: taskId, targetId: targetNodeKey });
+    io.emit('signal_start', { 
+      id: taskId, 
+      targetId: targetNodeKey,
+      nodeName: targetNode.name,
+      request: req.body
+    });
 
     // Send the task to the specific browser running the model
     io.to(targetNode.socketId).emit('compute_task', {
