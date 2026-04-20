@@ -99,6 +99,100 @@ app.get('/api/state', (req, res) => {
   res.json(getState());
 });
 
+// 🌐 Model Pool (In-Memory Only — nothing saved to disk)
+const modelPool = new Map(); // key: apiKey, value: { name, url, models, status, lastSeen }
+
+// Auto-discover models from an endpoint
+async function discoverModels(url) {
+  try {
+    const response = await axios.get(`${url}/models`, { timeout: 5000 });
+    if (response.data && response.data.data) {
+      return response.data.data.map(m => m.id);
+    }
+    return [];
+  } catch (e) {
+    return [];
+  }
+}
+
+// Register a model endpoint to the pool
+app.post('/api/pool/register', async (req, res) => {
+  const { name, url } = req.body;
+  if (!name || !url) {
+    return res.status(400).json({ error: 'Name and URL required.' });
+  }
+
+  const cleanUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+  
+  // Auto-discover what models are running
+  const models = await discoverModels(cleanUrl);
+  const apiKey = uuidv4();
+
+  modelPool.set(apiKey, {
+    name,
+    url: cleanUrl,
+    models,
+    status: models.length > 0 ? 'online' : 'offline',
+    lastSeen: new Date().toISOString()
+  });
+
+  console.log(`🌐 New node joined the pool: ${name} (${models.length} models detected)`);
+  io.emit('pool_update', getPoolList());
+
+  res.json({ 
+    success: true, 
+    apiKey, 
+    modelsDetected: models,
+    message: `Welcome to the network, ${name}! ${models.length} model(s) detected.`
+  });
+});
+
+// Get all models in the pool
+app.get('/api/pool', (req, res) => {
+  res.json(getPoolList());
+});
+
+// OpenAI-compatible /v1/models endpoint — shows all available models on the network
+app.get('/v1/models', (req, res) => {
+  const allModels = [];
+  for (const [key, node] of modelPool) {
+    for (const model of node.models) {
+      allModels.push({
+        id: model,
+        object: 'model',
+        owned_by: node.name,
+        status: node.status
+      });
+    }
+  }
+  res.json({ object: 'list', data: allModels });
+});
+
+function getPoolList() {
+  const list = [];
+  for (const [key, node] of modelPool) {
+    list.push({
+      name: node.name,
+      models: node.models,
+      status: node.status,
+      lastSeen: node.lastSeen
+    });
+  }
+  return list;
+}
+
+// Ping all pool nodes every 30s
+setInterval(async () => {
+  for (const [key, node] of modelPool) {
+    const models = await discoverModels(node.url);
+    node.models = models.length > 0 ? models : node.models;
+    node.status = models.length > 0 ? 'online' : 'offline';
+    node.lastSeen = models.length > 0 ? new Date().toISOString() : node.lastSeen;
+  }
+  io.emit('pool_update', getPoolList());
+}, 30000);
+
+
 // 🔐 Security Management
 app.post('/api/security/generate', (req, res) => {
   try {

@@ -215,53 +215,29 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Relay Section */
-.relay-section {
+/* Pool Section */
+.pool-section {
   flex: 1;
   display: flex;
   flex-direction: column;
   padding: 1rem;
   background: rgba(0,0,0,0.2);
+  overflow: hidden;
 }
 
-.relay-messages {
+.model-pool {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 1rem;
-  font-size: 0.85rem;
 }
 
-.msg.system { color: var(--accent-neon); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; }
-
-.input-area {
-  display: flex;
-  gap: 12px;
-}
-
-textarea {
-  flex: 1;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border-glass);
-  border-radius: 8px;
-  color: white;
-  padding: 0.8rem;
-  resize: none;
-  font-family: inherit;
-  outline: none;
-}
-
-.send-btn {
-  background: var(--accent-gold);
-  color: black;
-  border: none;
-  padding: 0 1.5rem;
-  border-radius: 8px;
-  font-weight: 700;
-  cursor: pointer;
+.pool-node {
   transition: var(--transition-smooth);
 }
 
-.send-btn:hover { transform: scale(1.05); }
+.pool-node:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 
 /* Modals */
 .modal-overlay {

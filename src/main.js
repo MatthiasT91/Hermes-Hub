@@ -16,20 +16,26 @@ const nodeListEl = document.getElementById('node-list');
 const signalStream = document.getElementById('signal-stream');
 const totalSignalsEl = document.getElementById('total-signals');
 const activeNodeDisplay = document.getElementById('active-node-display');
-const relayMessagesEl = document.getElementById('relay-messages');
-const promptInput = document.getElementById('prompt-input');
-const sendBtn = document.getElementById('send-btn');
 const addNodeBtn = document.getElementById('add-node-btn');
 const addNodeModal = document.getElementById('add-node-modal');
 const cancelNodeBtn = document.getElementById('cancel-node-btn');
 const saveNodeBtn = document.getElementById('save-node-btn');
 const genAuthBtn = document.getElementById('gen-auth-btn');
 const currentTokenDisplay = document.getElementById('current-token-display');
+const modelPoolEl = document.getElementById('model-pool');
+
+// Join Network Elements
+const joinNetworkBtn = document.getElementById('join-network-btn');
+const joinModal = document.getElementById('join-modal');
+const joinCancelBtn = document.getElementById('join-cancel-btn');
+const joinSubmitBtn = document.getElementById('join-submit-btn');
+const joinResult = document.getElementById('join-result');
 
 function init() {
   renderNodes();
   checkAllNodes();
   setInterval(checkAllNodes, 30000);
+  loadPool();
 
   // Sync with Backend on load
   syncWithBackend();
@@ -37,7 +43,7 @@ function init() {
   // Event Listeners
   addNodeBtn.addEventListener('click', () => addNodeModal.classList.add('active'));
   cancelNodeBtn.addEventListener('click', () => addNodeModal.classList.remove('active'));
-  
+
   saveNodeBtn.addEventListener('click', () => {
     const name = document.getElementById('node-name-input').value.trim();
     const url = document.getElementById('node-url-input').value.trim();
@@ -57,6 +63,56 @@ function init() {
     }
   });
 
+  // Join Network
+  joinNetworkBtn.addEventListener('click', () => {
+    joinResult.style.display = 'none';
+    joinModal.classList.add('active');
+  });
+  joinCancelBtn.addEventListener('click', () => joinModal.classList.remove('active'));
+
+  joinSubmitBtn.addEventListener('click', async () => {
+    const name = document.getElementById('join-name-input').value.trim();
+    const url = document.getElementById('join-url-input').value.trim();
+    if (!name || !url) return;
+
+    joinSubmitBtn.innerText = 'SCANNING...';
+    joinSubmitBtn.disabled = true;
+
+    try {
+      const response = await fetch('/api/pool/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, url })
+      });
+      const data = await response.json();
+
+      joinResult.style.display = 'block';
+      if (data.success) {
+        joinResult.style.background = 'rgba(0, 255, 157, 0.1)';
+        joinResult.style.color = 'var(--status-online)';
+        joinResult.innerHTML = `
+          ✅ ${data.message}<br>
+          🔑 Your API Key: <strong>${data.apiKey}</strong><br>
+          🧠 Models: ${data.modelsDetected.join(', ') || 'None detected (is your model running?)'}
+        `;
+        navigator.clipboard.writeText(data.apiKey);
+      } else {
+        joinResult.style.background = 'rgba(255, 62, 62, 0.1)';
+        joinResult.style.color = 'var(--status-offline)';
+        joinResult.innerText = `❌ ${data.error}`;
+      }
+    } catch (e) {
+      joinResult.style.display = 'block';
+      joinResult.style.background = 'rgba(255, 62, 62, 0.1)';
+      joinResult.style.color = 'var(--status-offline)';
+      joinResult.innerText = `❌ Connection failed: ${e.message}`;
+    }
+
+    joinSubmitBtn.innerText = 'SCAN & JOIN';
+    joinSubmitBtn.disabled = false;
+  });
+
+  // Security
   genAuthBtn.addEventListener('click', async () => {
     if (confirm("Regenerate Universal Auth Token? This will lock out all agents until they are updated with the new key.")) {
       try {
@@ -74,27 +130,60 @@ function init() {
     }
   });
 
-  sendBtn.addEventListener('click', sendManualRelay);
-
   // Socket Signal Handlers
   socket.on('signal_start', (data) => {
     addSignalCard(data);
     totalSignals++;
     totalSignalsEl.innerText = totalSignals;
-    addRelayLog(`>> Incoming signal: [REF:${data.id}] Routing to ${data.node}`);
   });
 
   socket.on('signal_success', (data) => {
     updateSignalCard(data, 'SUCCESS');
-    addRelayLog(`<< Signal successful: [REF:${data.id}] Latency: ${data.latency}ms`);
   });
 
   socket.on('signal_error', (data) => {
     updateSignalCard(data, 'ERROR');
-    addRelayLog(`!! Signal Failure: [REF:${data.id}] Error: ${data.error}`);
+  });
+
+  // Pool Updates (Real-time)
+  socket.on('pool_update', (pool) => {
+    renderPool(pool);
   });
 }
 
+// === Pool Functions ===
+async function loadPool() {
+  try {
+    const response = await fetch('/api/pool');
+    const pool = await response.json();
+    renderPool(pool);
+  } catch (e) {
+    console.error('Failed to load pool:', e);
+  }
+}
+
+function renderPool(pool) {
+  if (!pool || pool.length === 0) {
+    modelPoolEl.innerHTML = `
+      <div class="empty-state" style="height: auto; padding: 2rem;">
+        <span>No models registered yet. Be the first to join!</span>
+      </div>
+    `;
+    return;
+  }
+
+  modelPoolEl.innerHTML = pool.map(node => `
+    <div class="pool-node glass-card" style="padding: 1rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div style="font-weight: 600; font-size: 0.85rem;">${node.name}</div>
+        <div style="font-family: 'JetBrains Mono'; font-size: 0.65rem; color: var(--accent-neon);">${node.models.join(', ') || 'No models'}</div>
+      </div>
+      <div class="status-dot ${node.status === 'online' ? 'status-online' : 'status-offline'}"></div>
+    </div>
+  `).join('');
+}
+
+// === Node Functions ===
 function saveNodes() {
   localStorage.setItem('hermes_nodes', JSON.stringify(nodes));
   syncWithBackend();
@@ -146,14 +235,15 @@ function checkAllNodes() {
   nodes.forEach(checkNodeStatus);
 }
 
+// === Signal Functions ===
 function addSignalCard(data) {
   const empty = document.querySelector('.empty-state');
-  if (empty) empty.remove();
+  if (empty && empty.closest('.signal-stream')) empty.remove();
 
   const card = document.createElement('div');
   card.id = `signal-${data.id}`;
   card.className = 'signal-card glass-card';
-  
+
   const userText = data.request.messages ? data.request.messages[data.request.messages.length - 1].content : 'Binary Stream';
 
   card.innerHTML = `
@@ -174,43 +264,12 @@ function addSignalCard(data) {
 function updateSignalCard(data, status) {
   const pane = document.getElementById(`res-pane-${data.id}`);
   if (!pane) return;
-  
+
   if (status === 'SUCCESS') {
     const text = data.response.choices ? data.response.choices[0].message.content : 'Signal Received';
     pane.innerHTML = `<label>COMPLETE (${data.latency}ms)</label><pre>${text.substring(0, 100)}...</pre>`;
   } else {
     pane.innerHTML = `<label style="color: red;">DROPPED</label><pre style="color: red;">${data.error}</pre>`;
-  }
-}
-
-function addRelayLog(text) {
-  const log = document.createElement('div');
-  log.className = 'msg system';
-  log.innerText = text;
-  relayMessagesEl.appendChild(log);
-  relayMessagesEl.scrollTop = relayMessagesEl.scrollHeight;
-}
-
-async function sendManualRelay() {
-  const text = promptInput.value.trim();
-  if (!text) return;
-  
-  addRelayLog(`>> Manual Intervention: ${text}`);
-  promptInput.value = '';
-
-  try {
-    const response = await fetch('/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'manual-override',
-        messages: [{ role: 'user', content: text }]
-      })
-    });
-    const data = await response.json();
-    addRelayLog(`<< Response: ${data.choices[0].message.content}`);
-  } catch (e) {
-    addRelayLog(`!! Manual Intervention Failed: ${e.message}`);
   }
 }
 
