@@ -301,8 +301,15 @@ app.post('/api/admin/approve', requireAdmin, (req, res) => {
   const { id } = req.body;
   const node = modelPool.get(id);
   if (!node) return res.status(404).json({ error: 'Node not found.' });
+  
   node.approved = true;
-  node.status = node.models.length > 0 ? 'online' : 'offline';
+  
+  // Persist to Disk
+  const state = getState();
+  const diskNode = state.nodes.find(n => n.id === id);
+  if (diskNode) diskNode.approved = true;
+  fs.writeFileSync(DATA_PATH, JSON.stringify(state, null, 2));
+
   console.log(`✅ Admin approved node: ${node.name}`);
   io.emit('pool_update', getPoolList());
   res.json({ success: true, message: `${node.name} approved.` });
