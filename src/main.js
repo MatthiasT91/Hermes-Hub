@@ -41,6 +41,11 @@ function init() {
   updateOnboardingUI();
   loadPool();
 
+  // If we already have an Identity, make sure the UI knows
+  if (operatorName && apiKey) {
+    console.log("Operator context restored. Ready to pulse.");
+  }
+
   // Event Listeners
   setupIdentityBtn.addEventListener('click', () => {
     idResult.style.display = 'none';
