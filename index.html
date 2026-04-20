@@ -110,22 +110,23 @@
     <!-- Join Network Modal -->
     <div id="join-modal" class="modal-overlay">
       <div class="modal glass">
-        <h3>Join the Network</h3>
-        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
-          Share your model with the network. The Hub will auto-detect what you're running.
+        <h3>Become a Network Contributor</h3>
+        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.5;">
+          Connect your local AI directly through this browser tab. <br><br>
+          <strong style="color: var(--accent-neon);">Requirement:</strong> You must start Ollama with <code>OLLAMA_ORIGINS="*"</code> so this page can talk to your GPU. <i>(No Cloudflare Tunnels required!)</i>
         </p>
         <div class="form-group">
-          <label>YOUR NAME</label>
-          <input type="text" id="join-name-input" placeholder="e.g. Bob's Workshop">
+          <label>CONTRIBUTOR NAME</label>
+          <input type="text" id="join-name-input" placeholder="e.g. Phoenix-Brain">
         </div>
-        <div class="form-group">
-          <label>MODEL ENDPOINT URL</label>
-          <input type="text" id="join-url-input" placeholder="https://your-tunnel.xyz/v1">
+        <div class="form-group" style="display: none;">
+          <label>OWNER API KEY (Optional Setup)</label>
+          <input type="password" id="join-key-input" placeholder="Custom Key or leave blank">
         </div>
         <div id="join-result" style="display: none; margin-bottom: 1rem; padding: 1rem; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;"></div>
         <div style="display: flex; gap: 12px; margin-top: 1rem;">
           <button id="join-cancel-btn" class="add-node-btn" style="flex: 1;">CANCEL</button>
-          <button id="join-submit-btn" class="add-node-btn" style="flex: 2; background: var(--accent-gold); color: black; font-weight: 700;">SCAN & JOIN</button>
+          <button id="join-submit-btn" class="add-node-btn" style="flex: 2; background: var(--accent-gold); color: black; font-weight: 700;">CONNECT LOCAL NODE</button>
         </div>
       </div>
     </div>

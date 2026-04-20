@@ -35,6 +35,58 @@ function getState() {
   return JSON.parse(fs.readFileSync(DATA_PATH, 'utf8'));
 }
 
+// 🌐 WebSockets Model Pool
+const modelPool = new Map(); // key: apiKey, value: { socketId, name, models, status, approved, lastUsedByOwner, lastSeen }
+const pendingWebTasks = new Map(); // key: taskId, value: { resolve, reject, timer }
+
+// Handle Socket Connections
+io.on('connection', (socket) => {
+  socket.on('register_browser_node', (data) => {
+    const { ownerKey, name, models } = data;
+    const apiKey = ownerKey || uuidv4();
+    const existingNode = modelPool.get(apiKey);
+
+    modelPool.set(apiKey, {
+      name: name || 'Anonymous Network Node',
+      socketId: socket.id,
+      models: models || [],
+      status: existingNode?.approved ? 'online' : 'pending',
+      approved: existingNode?.approved || false,
+      lastUsedByOwner: existingNode?.lastUsedByOwner || 0,
+      lastSeen: new Date().toISOString()
+    });
+
+    socket.emit('registration_success', { apiKey, message: 'Connected to Hivemind.' });
+    console.log(`🌐 Browser Node linked: ${name} (Models: ${models?.length || 0})`);
+    io.emit('pool_update', getPoolList());
+  });
+
+  socket.on('task_result', (data) => {
+    const { taskId, response, error } = data;
+    const resolver = pendingWebTasks.get(taskId);
+    if (resolver) {
+      clearTimeout(resolver.timer);
+      if (error) {
+        resolver.reject(new Error(error));
+      } else {
+        resolver.resolve(response);
+      }
+      pendingWebTasks.delete(taskId);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    // Find node that owns this socket and mark offline
+    for (const [key, node] of modelPool.entries()) {
+      if (node.socketId === socket.id) {
+        node.status = 'offline';
+        io.emit('pool_update', getPoolList());
+        break;
+      }
+    }
+  });
+});
+
 // 🛰️ Phase 2: Intelligent Routing & Idle Logic
 app.post('/v1/chat/completions', async (req, res) => {
   // 1. Authenticate Request
@@ -90,8 +142,9 @@ app.post('/v1/chat/completions', async (req, res) => {
     }
   }
 
-  // 4. Proceed with Signal Capture & Routing
-  const signalId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+  // 4. Proceed with WebSockets Compute Relay
+  const taskId = uuidv4();
+  const signalId = taskId.substr(0, 8);
 
   io.emit('signal_start', {
     id: signalId,
@@ -102,14 +155,27 @@ app.post('/v1/chat/completions', async (req, res) => {
 
   try {
     const startTime = Date.now();
-    const response = await axios.post(`${targetNode.url}/chat/completions`, req.body, {
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 90000
+    
+    // Create the Promise to wait for the browser to run the model
+    const taskPromise = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        pendingWebTasks.delete(taskId);
+        reject(new Error("Timeout: Browser node did not respond within 120 seconds."));
+      }, 120000); // 2 minute maximum wait time
+      pendingWebTasks.set(taskId, { resolve, reject, timer });
     });
 
+    // Send the task to the specific browser running the model
+    io.to(targetNode.socketId).emit('compute_task', {
+      taskId,
+      request: req.body
+    });
+
+    const responseData = await taskPromise;
+
     const latency = Date.now() - startTime;
-    io.emit('signal_success', { id: signalId, latency, response: response.data });
-    res.json(response.data);
+    io.emit('signal_success', { id: signalId, latency, response: responseData });
+    res.json(responseData);
   } catch (error) {
     console.error('❌ Signal Drop:', error.message);
     io.emit('signal_error', { id: signalId, error: error.message });
@@ -128,54 +194,8 @@ app.get('/api/state', (req, res) => {
   res.json(getState());
 });
 
-// 🌐 Model Pool (In-Memory Only — nothing saved to disk)
-const modelPool = new Map(); // key: apiKey, value: { name, url, models, status, lastSeen }
-
-// Auto-discover models from an endpoint
-async function discoverModels(url) {
-  try {
-    const response = await axios.get(`${url}/models`, { timeout: 5000 });
-    if (response.data && response.data.data) {
-      return response.data.data.map(m => m.id);
-    }
-    return [];
-  } catch (e) {
-    return [];
-  }
-}
-
-// Register a model endpoint to the pool
-app.post('/api/pool/register', async (req, res) => {
-  const { name, url } = req.body;
-  if (!name || !url) {
-    return res.status(400).json({ error: 'Name and URL required.' });
-  }
-
-  const cleanUrl = url.endsWith('/') ? url.slice(0, -1) : url;
-  
-  // Auto-discover what models are running
-  const models = await discoverModels(cleanUrl);
-  const apiKey = uuidv4();
-
-  modelPool.set(apiKey, {
-    name,
-    url: cleanUrl,
-    models,
-    status: 'pending',
-    approved: false,
-    lastSeen: new Date().toISOString()
-  });
-
-  console.log(`🌐 New node requesting to join: ${name} (${models.length} models detected)`);
-  io.emit('pool_update', getPoolList());
-
-  res.json({ 
-    success: true, 
-    apiKey, 
-    modelsDetected: models,
-    message: `Welcome to the network, ${name}! ${models.length} model(s) detected.`
-  });
-});
+// Deprecated: Old API pool registration is replaced by sockets
+// app.post('/api/pool/register', ...)
 
 // Get all models in the pool
 app.get('/api/pool', (req, res) => {
@@ -214,16 +234,7 @@ function getPoolList(includeAll = false) {
   return list;
 }
 
-// Ping all pool nodes every 30s
-setInterval(async () => {
-  for (const [key, node] of modelPool) {
-    const models = await discoverModels(node.url);
-    node.models = models.length > 0 ? models : node.models;
-    node.status = models.length > 0 ? 'online' : 'offline';
-    node.lastSeen = models.length > 0 ? new Date().toISOString() : node.lastSeen;
-  }
-  io.emit('pool_update', getPoolList());
-}, 30000);
+// Note: The HTTP ping is removed HTTP heartbeat/ping -> Socket.io handles heartbeats natively
 
 // 🛡️ Admin Middleware
 function requireAdmin(req, res, next) {

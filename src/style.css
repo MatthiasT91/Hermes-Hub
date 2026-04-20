@@ -291,3 +291,47 @@ body {
 .pane { background: rgba(0,0,0,0.4); padding: 0.8rem; border-radius: 6px; font-size: 0.75rem; }
 .pane label { font-size: 0.5rem; color: var(--text-muted); display: block; margin-bottom: 5px; }
 pre { color: var(--accent-neon); overflow: hidden; text-overflow: ellipsis; }
+
+/* --- Hivemind Aesthetics --- */
+body.active-donor {
+  background: radial-gradient(circle at center, rgba(0, 245, 255, 0.05) 0%, var(--bg-deep) 100%);
+}
+
+body.active-donor .sidebar {
+  border-right: 1px solid var(--accent-neon);
+  box-shadow: 4px 0 20px rgba(0, 245, 255, 0.1);
+}
+
+.processing-task-indicator {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  background: rgba(0, 245, 255, 0.1);
+  border: 1px solid var(--accent-neon);
+  color: var(--accent-neon);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: pulse-glow 2s infinite;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.processing-task-indicator span {
+  animation: spin 3s linear infinite;
+  display: inline-block;
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 10px rgba(0, 245, 255, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(0, 245, 255, 0.6); }
+  100% { box-shadow: 0 0 10px rgba(0, 245, 255, 0.2); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

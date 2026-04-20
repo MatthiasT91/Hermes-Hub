@@ -73,44 +73,59 @@ function init() {
 
   joinSubmitBtn.addEventListener('click', async () => {
     const name = document.getElementById('join-name-input').value.trim();
-    const url = document.getElementById('join-url-input').value.trim();
-    if (!name || !url) return;
+    const ownerKey = document.getElementById('join-key-input').value.trim();
+    if (!name) return;
 
-    joinSubmitBtn.innerText = 'SCANNING...';
+    joinSubmitBtn.innerText = 'SCANNING LOCALHOST...';
     joinSubmitBtn.disabled = true;
 
     try {
-      const response = await fetch('/api/pool/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, url })
-      });
+      // Direct browser-to-localhost model discovery
+      const response = await fetch('http://127.0.0.1:11434/api/tags');
       const data = await response.json();
+      
+      const discoveredModels = data.models ? data.models.map(m => m.name) : [];
+      
+      if (discoveredModels.length === 0) {
+        throw new Error("Local instance running, but no models found.");
+      }
+
+      // Found models! Send to Hub via WebSocket
+      socket.emit('register_browser_node', { name, models: discoveredModels, ownerKey });
 
       joinResult.style.display = 'block';
-      if (data.success) {
-        joinResult.style.background = 'rgba(0, 255, 157, 0.1)';
-        joinResult.style.color = 'var(--status-online)';
-        joinResult.innerHTML = `
-          ✅ ${data.message}<br>
-          🔑 Your API Key: <strong>${data.apiKey}</strong><br>
-          🧠 Models: ${data.modelsDetected.join(', ') || 'None detected (is your model running?)'}
-        `;
-        navigator.clipboard.writeText(data.apiKey);
-      } else {
-        joinResult.style.background = 'rgba(255, 62, 62, 0.1)';
-        joinResult.style.color = 'var(--status-offline)';
-        joinResult.innerText = `❌ ${data.error}`;
-      }
+      joinResult.style.background = 'rgba(255, 170, 0, 0.1)';
+      joinResult.style.color = 'var(--status-pending)';
+      joinResult.innerText = `⏳ Pinging Hub with ${discoveredModels.length} models...`;
+
     } catch (e) {
       joinResult.style.display = 'block';
       joinResult.style.background = 'rgba(255, 62, 62, 0.1)';
       joinResult.style.color = 'var(--status-offline)';
-      joinResult.innerText = `❌ Connection failed: ${e.message}`;
+      joinResult.innerHTML = `❌ Connection failed: ${e.message}<br><br><span style="color:#fff;">Hint: Did you open Ollama with <code>OLLAMA_ORIGINS="*"</code>?</span>`;
+      joinSubmitBtn.innerText = 'CONNECT LOCAL NODE';
+      joinSubmitBtn.disabled = false;
     }
+  });
 
-    joinSubmitBtn.innerText = 'SCAN & JOIN';
-    joinSubmitBtn.disabled = false;
+  // Handle successful registration from Hub
+  socket.on('registration_success', (data) => {
+    joinResult.style.background = 'rgba(0, 255, 157, 0.1)';
+    joinResult.style.color = 'var(--status-online)';
+    joinResult.innerHTML = `
+      ✅ ${data.message}<br>
+      🔑 Your API Key: <strong id="copy-key" style="cursor:pointer; text-decoration: underline;">${data.apiKey}</strong><br><br>
+      <i>Keep this tab open. If you close it, your node goes offline!</i>
+    `;
+    
+    document.getElementById('copy-key').addEventListener('click', () => {
+      navigator.clipboard.writeText(data.apiKey);
+      alert('API Key Copied!');
+    });
+
+    joinSubmitBtn.innerText = 'CONNECTED AS DONOR';
+    // Visual Polish for "Active Donor" layout
+    document.body.classList.add('active-donor');
   });
 
   // Security
@@ -144,6 +159,36 @@ function init() {
 
   socket.on('signal_error', (data) => {
     updateSignalCard(data, 'ERROR');
+  });
+
+  // Handle Incoming Compute Tasks from Hub (The Browser Routing Magic)
+  socket.on('compute_task', async (data) => {
+    const { taskId, request } = data;
+    
+    // Add glowing animation for "Processing Network Task..."
+    const uiIndicator = document.createElement('div');
+    uiIndicator.className = 'processing-task-indicator glass';
+    uiIndicator.innerHTML = `<span>⚡</span> Processing Network Task...`;
+    document.body.appendChild(uiIndicator);
+
+    try {
+      const response = await fetch('http://127.0.0.1:11434/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request)
+      });
+      
+      const responseData = await response.json();
+      
+      // Send result back to the Hub via websockets
+      socket.emit('task_result', { taskId, response: responseData });
+    } catch (error) {
+      // Send error back to the Hub
+      socket.emit('task_result', { taskId, error: error.message });
+    } finally {
+      // Clean up glowing animation
+      setTimeout(() => uiIndicator.remove(), 1000);
+    }
   });
 
   // Pool Updates (Real-time)
