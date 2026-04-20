@@ -1,6 +1,6 @@
 # 🏛️ Hermes Hub: Distributed AI Gateway
 
-A secure, high-performance relay for local LLM agents. Hermes Hub enables a **Browser-Based Hivemind** where contributors donate GPU compute by simply leaving a dashboard tab open.
+A secure, high-performance relay for local LLM agents. Hermes Hub enables the **Hermes Collective**, a distributed mesh where contributors donate GPU compute.
 
 ## 🚀 Deployment (Server-Side)
 Building the Hub requires Docker and a domain/tunnel (e.g., Cloudflare).
@@ -17,20 +17,20 @@ Building the Hub requires Docker and a domain/tunnel (e.g., Cloudflare).
 
 ---
 
-## 🌐 Joining the Hivemind (Contributor)
+## 🌐 Joining the Collective (Contributor)
 No port forwarding or tunnels required for contributors.
 
 1. **Local Setup**: Start your AI engine (Ollama, LM Studio, etc.).
    *   *Note*: If using Ollama, you must set `OLLAMA_ORIGINS="*"` so the browser can talk to your GPU.
 2. **Setup Identity**: Visit the Hub, click **IDENTIFY**, and create your operator profile.
-3. **Pulse**: Click **CONNECT** to link your local models to the distributed network. Keep the tab open to remain online.
+3. **Pulse**: Click **CONNECT** to link your local models to the Hermes Collective. Keep the tab open to remain online.
 
 ---
 
 ## 🛡️ The "Owner is King" Protocol
 The Hub implements an autonomous **5-Minute Priority Lock**:
 - **Owner Priority**: When you use your own local brain, the Hub grants you instant, exclusive access.
-- **Idle Sharing**: If your brain has been idle for more than 5 minutes, it is shared with the network (the Hivemind).
+- **Idle Sharing**: If your brain has been idle for more than 5 minutes, it is shared with the network (the Hermes Collective).
 - **Borrower Lock**: If someone tries to use your brain while you are active, they receive a `423 Locked` status until you stop for 5 minutes.
 
 ---
