@@ -37,9 +37,24 @@ const joinResult = document.getElementById('join-result');
 const operatorTag = document.getElementById('operator-tag');
 const modelDiscoveryList = document.getElementById('model-discovery-list');
 
+// Chat Elements
+const chatModelSelect = document.getElementById('chat-model-select');
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const chatSendBtn = document.getElementById('chat-send-btn');
+
 function init() {
   updateOnboardingUI();
   loadPool();
+
+  // Chat Submission
+  chatSendBtn.addEventListener('click', () => sendChatMessage());
+  chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendChatMessage();
+    }
+  });
 
   // If we already have an Identity, make sure the UI knows
   if (operatorName && apiKey) {
@@ -198,6 +213,24 @@ function renderPool(pool) {
       <div class="status-dot ${node.status === 'online' ? 'status-online' : 'status-offline'}"></div>
     </div>
   `).join('');
+
+  // Sync Chat Model Selector
+  const currentVal = chatModelSelect.value;
+  chatModelSelect.innerHTML = '<option value="">Select a Model...</option>';
+  const allModels = new Set();
+  pool.forEach(node => {
+    if (node.status === 'online' && node.approved) {
+      node.models.forEach(m => allModels.add(m));
+    }
+  });
+  
+  allModels.forEach(model => {
+    const opt = document.createElement('option');
+    opt.value = model;
+    opt.innerText = model;
+    chatModelSelect.appendChild(opt);
+  });
+  if (allModels.has(currentVal)) chatModelSelect.value = currentVal;
 }
 
 // === Signal Functions ===
@@ -263,3 +296,57 @@ async function handleComputeTask(data) {
 }
 
 init();
+
+// === Chat Functions ===
+async function sendChatMessage() {
+  const model = chatModelSelect.value;
+  const content = chatInput.value.trim();
+  if (!model || !content) return;
+
+  // Add User Bubble
+  appendBubble('user', content);
+  chatInput.value = '';
+
+  // Add Loading Bubble
+  const loadingId = 'loading-' + Date.now();
+  appendBubble('ai', '...', loadingId);
+
+  try {
+    const response = await fetch('/v1/chat/completions', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey || 'public_tester'}`
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [{ role: 'user', content: content }]
+      })
+    });
+
+    const data = await response.json();
+    const loadingEl = document.getElementById(loadingId);
+    
+    if (data.error) {
+      loadingEl.innerText = `Error: ${data.error.message}`;
+      loadingEl.style.color = 'var(--status-offline)';
+    } else {
+      loadingEl.innerText = data.choices[0].message.content;
+    }
+  } catch (e) {
+    const loadingEl = document.getElementById(loadingId);
+    loadingEl.innerText = `Transmission Failed: ${e.message}`;
+  }
+}
+
+function appendBubble(role, text, id = null) {
+  const placeholder = chatMessages.querySelector('.chat-placeholder');
+  if (placeholder) placeholder.remove();
+
+  const bubble = document.createElement('div');
+  bubble.className = `chat-bubble ${role}`;
+  if (id) bubble.id = id;
+  bubble.innerText = text;
+  chatMessages.appendChild(bubble);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
