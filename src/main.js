@@ -2,10 +2,8 @@ import './style.css';
 import { io } from 'socket.io-client';
 
 // Initial State
-let nodes = JSON.parse(localStorage.getItem('hermes_nodes')) || [
-  { id: 'primary-core', name: 'Hermes Primary (Local)', url: 'http://localhost:11434/v1', status: 'offline', lastCheck: null }
-];
-let activeNodeId = 'primary-core';
+let nodes = JSON.parse(localStorage.getItem('hermes_nodes')) || [];
+let activeNodeId = null;
 let totalSignals = 0;
 
 // Socket Connection
