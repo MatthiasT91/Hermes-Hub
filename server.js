@@ -6,6 +6,9 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +36,15 @@ function getState() {
 
 // 🛰️ The Signal Interceptor (Relay)
 app.post('/v1/chat/completions', async (req, res) => {
+  // 🛡️ Security Guard
+  const authHeader = req.headers.authorization;
+  const expectedToken = `Bearer ${process.env.HERMES_AUTH_TOKEN}`;
+
+  if (process.env.HERMES_AUTH_TOKEN && authHeader !== expectedToken) {
+    console.warn(`🛑 Unauthorized access attempt from ${req.ip}`);
+    return res.status(401).json({ error: { message: "Unauthorized: Invalid Hermes Auth Token." } });
+  }
+
   const state = getState();
   const activeNode = state.nodes.find(n => n.id === state.activeNodeId);
   const signalId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -92,5 +104,8 @@ app.get('*', (req, res) => {
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`🏛️ Hermes Command Center online at http://localhost:${PORT}`);
+  const domain = process.env.NETWORK_DOMAIN || 'http://localhost:' + PORT;
+  console.log(`🏛️  Hermes Gateway Hub online at ${domain}`);
+  console.log(`🧠  Local Agent Signal Base: ${domain}/v1`);
+  console.log(`🛡️  Security Status: ${process.env.HERMES_AUTH_TOKEN ? 'TOKEN AUTH ENABLED' : 'WIDE OPEN (NOT RECOMMENDED)'}`);
 });
