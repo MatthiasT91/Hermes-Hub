@@ -146,7 +146,11 @@ function init() {
 function updateOnboardingUI() {
   if (operatorName) {
     step1Card.classList.add('active');
-    profileStatus.innerText = operatorName.toUpperCase();
+    let identityHtml = operatorName.toUpperCase();
+    if (apiKey) {
+      identityHtml += `<div style="font-size: 0.5rem; color: var(--accent-gold); margin-top: 4px; font-family: 'JetBrains Mono'; opacity: 0.8;">KEY: ${apiKey}</div>`;
+    }
+    profileStatus.innerHTML = identityHtml;
     setupIdentityBtn.innerText = 'EDIT';
     pulseBtn.disabled = false;
   } else {
