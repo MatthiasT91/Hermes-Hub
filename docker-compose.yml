@@ -7,15 +7,3 @@ services:
     restart: always
     env_file:
       - .env
-    volumes:
-      - .:/app
-      - /app/node_modules
-
-  tunnel:
-    container_name: cloudflared-tunnel
-    image: cloudflare/cloudflared:latest
-    restart: always
-    network_mode: service:hermes-hub
-    env_file:
-      - .env
-    command: tunnel --no-autoupdate run
