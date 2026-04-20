@@ -132,11 +132,12 @@ app.post('/api/pool/register', async (req, res) => {
     name,
     url: cleanUrl,
     models,
-    status: models.length > 0 ? 'online' : 'offline',
+    status: 'pending',
+    approved: false,
     lastSeen: new Date().toISOString()
   });
 
-  console.log(`🌐 New node joined the pool: ${name} (${models.length} models detected)`);
+  console.log(`🌐 New node requesting to join: ${name} (${models.length} models detected)`);
   io.emit('pool_update', getPoolList());
 
   res.json({ 
@@ -168,13 +169,16 @@ app.get('/v1/models', (req, res) => {
   res.json({ object: 'list', data: allModels });
 });
 
-function getPoolList() {
+function getPoolList(includeAll = false) {
   const list = [];
   for (const [key, node] of modelPool) {
+    if (!includeAll && !node.approved) continue; // Only show approved nodes publicly
     list.push({
+      id: key,
       name: node.name,
       models: node.models,
       status: node.status,
+      approved: node.approved,
       lastSeen: node.lastSeen
     });
   }
@@ -191,6 +195,42 @@ setInterval(async () => {
   }
   io.emit('pool_update', getPoolList());
 }, 30000);
+
+// 🛡️ Admin Middleware
+function requireAdmin(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
+  if (token !== process.env.HERMES_AUTH_TOKEN) {
+    return res.status(403).json({ error: 'Admin access denied.' });
+  }
+  next();
+}
+
+// 🏛️ Admin API
+app.get('/api/admin/pool', requireAdmin, (req, res) => {
+  res.json(getPoolList(true)); // Show ALL nodes including pending
+});
+
+app.post('/api/admin/approve', requireAdmin, (req, res) => {
+  const { id } = req.body;
+  const node = modelPool.get(id);
+  if (!node) return res.status(404).json({ error: 'Node not found.' });
+  node.approved = true;
+  node.status = node.models.length > 0 ? 'online' : 'offline';
+  console.log(`✅ Admin approved node: ${node.name}`);
+  io.emit('pool_update', getPoolList());
+  res.json({ success: true, message: `${node.name} approved.` });
+});
+
+app.post('/api/admin/reject', requireAdmin, (req, res) => {
+  const { id } = req.body;
+  const node = modelPool.get(id);
+  if (!node) return res.status(404).json({ error: 'Node not found.' });
+  const name = node.name;
+  modelPool.delete(id);
+  console.log(`❌ Admin rejected node: ${name}`);
+  io.emit('pool_update', getPoolList());
+  res.json({ success: true, message: `${name} removed.` });
+});
 
 
 // 🔐 Security Management
@@ -218,6 +258,11 @@ app.post('/api/security/generate', (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, 'dist')));
+
+// Admin Dashboard
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });

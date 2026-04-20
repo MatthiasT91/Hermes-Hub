@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hermes Hub | Admin</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <style>
+    :root {
+      --bg-deep: #050508;
+      --bg-glass: rgba(20, 20, 35, 0.5);
+      --border-glass: rgba(255, 255, 255, 0.1);
+      --accent-gold: #FFD700;
+      --accent-neon: #00F5FF;
+      --status-online: #00FF9D;
+      --status-offline: #FF3E3E;
+      --status-pending: #FFA500;
+      --text-primary: #F8F9FA;
+      --text-secondary: #A0A0B0;
+      --text-muted: #606070;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 2rem; padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-glass);
+    }
+    .header h1 {
+      font-size: 1.5rem; letter-spacing: 2px;
+      background: linear-gradient(135deg, var(--accent-gold), #8A2BE2);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .login-form { display: flex; gap: 12px; align-items: center; }
+    .login-form input {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass);
+      padding: 0.6rem 1rem; color: white; font-family: 'JetBrains Mono', monospace;
+      border-radius: 8px; outline: none; font-size: 0.8rem;
+    }
+    .btn {
+      padding: 0.6rem 1.5rem; border: 1px solid var(--border-glass);
+      background: transparent; color: var(--text-secondary); cursor: pointer;
+      border-radius: 8px; font-family: inherit; font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+    .btn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+    .btn-approve { border-color: var(--status-online); color: var(--status-online); }
+    .btn-approve:hover { background: rgba(0, 255, 157, 0.1); }
+    .btn-reject { border-color: var(--status-offline); color: var(--status-offline); }
+    .btn-reject:hover { background: rgba(255, 62, 62, 0.1); }
+    .node-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.2rem; margin-bottom: 0.8rem; border-radius: 12px;
+      background: var(--bg-glass); border: 1px solid var(--border-glass);
+    }
+    .node-info { flex: 1; }
+    .node-name { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
+    .node-models { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--accent-neon); }
+    .node-meta { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; }
+    .node-actions { display: flex; gap: 8px; align-items: center; }
+    .badge {
+      padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.6rem;
+      font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    }
+    .badge-pending { background: rgba(255, 165, 0, 0.15); color: var(--status-pending); }
+    .badge-approved { background: rgba(0, 255, 157, 0.15); color: var(--status-online); }
+    .badge-offline { background: rgba(255, 62, 62, 0.15); color: var(--status-offline); }
+    #content { display: none; }
+    .empty { text-align: center; padding: 4rem; color: var(--text-muted); }
+    .stats { display: flex; gap: 2rem; margin-bottom: 2rem; }
+    .stat-card {
+      padding: 1.5rem; border-radius: 12px; background: var(--bg-glass);
+      border: 1px solid var(--border-glass); flex: 1;
+    }
+    .stat-label { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 1px; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: var(--accent-gold); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🏛️ HERMES ADMIN</h1>
+    <div class="login-form">
+      <input type="password" id="admin-token" placeholder="Enter Auth Token">
+      <button class="btn" id="login-btn">AUTHENTICATE</button>
+      <a href="/" class="btn" style="text-decoration: none;">← DASHBOARD</a>
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">TOTAL NODES</div>
+        <div class="stat-value" id="stat-total">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">PENDING APPROVAL</div>
+        <div class="stat-value" id="stat-pending" style="color: var(--status-pending);">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ONLINE</div>
+        <div class="stat-value" id="stat-online" style="color: var(--status-online);">0</div>
+      </div>
+    </div>
+
+    <h2 style="font-size: 0.8rem; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 1rem;">NETWORK NODES</h2>
+    <div id="node-list"></div>
+  </div>
+
+  <script>
+    let authToken = '';
+    const content = document.getElementById('content');
+    const loginBtn = document.getElementById('login-btn');
+    const tokenInput = document.getElementById('admin-token');
+
+    loginBtn.addEventListener('click', () => {
+      authToken = tokenInput.value.trim();
+      if (authToken) {
+        content.style.display = 'block';
+        loadPool();
+      }
+    });
+
+    tokenInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') loginBtn.click();
+    });
+
+    async function loadPool() {
+      try {
+        const res = await fetch('/api/admin/pool', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.status === 403) {
+          alert('Invalid token. Access denied.');
+          content.style.display = 'none';
+          return;
+        }
+        const pool = await res.json();
+        renderPool(pool);
+      } catch (e) {
+        console.error('Load failed:', e);
+      }
+    }
+
+    function renderPool(pool) {
+      const total = pool.length;
+      const pending = pool.filter(n => !n.approved).length;
+      const online = pool.filter(n => n.status === 'online').length;
+
+      document.getElementById('stat-total').innerText = total;
+      document.getElementById('stat-pending').innerText = pending;
+      document.getElementById('stat-online').innerText = online;
+
+      const list = document.getElementById('node-list');
+      if (pool.length === 0) {
+        list.innerHTML = '<div class="empty">No nodes have joined the network yet.</div>';
+        return;
+      }
+
+      list.innerHTML = pool.map(node => `
+        <div class="node-row">
+          <div class="node-info">
+            <div class="node-name">${node.name}</div>
+            <div class="node-models">${node.models.join(', ') || 'No models detected'}</div>
+            <div class="node-meta">Last seen: ${new Date(node.lastSeen).toLocaleString()}</div>
+          </div>
+          <div class="node-actions">
+            <span class="badge ${node.approved ? (node.status === 'online' ? 'badge-approved' : 'badge-offline') : 'badge-pending'}">
+              ${node.approved ? node.status : 'PENDING'}
+            </span>
+            ${!node.approved ? `<button class="btn btn-approve" onclick="approveNode('${node.id}')">APPROVE</button>` : ''}
+            <button class="btn btn-reject" onclick="rejectNode('${node.id}')">REMOVE</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function approveNode(id) {
+      await fetch('/api/admin/approve', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      loadPool();
+    }
+
+    async function rejectNode(id) {
+      if (confirm('Remove this node from the network?')) {
+        await fetch('/api/admin/reject', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        loadPool();
+      }
+    }
+
+    // Auto-refresh every 10s
+    setInterval(() => { if (authToken) loadPool(); }, 10000);
+  </script>
+</body>
+</html>
