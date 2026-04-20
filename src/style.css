@@ -86,6 +86,7 @@ body.active-donor .sidebar {
   letter-spacing: 2px;
   background: linear-gradient(135deg, var(--accent-gold), var(--accent-purple));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   display: flex;
   align-items: center;
