@@ -3,12 +3,20 @@ services:
     build: .
     container_name: hermes-hub
     ports:
-      - "8063:8063"
+      - "${PORT:-8080}:${PORT:-8080}"
     restart: always
     env_file:
       - .env
-    environment:
-      - PORT=8063
     volumes:
       - .:/app
       - /app/node_modules
+
+  tunnel:
+    container_name: cloudflared-tunnel
+    image: cloudflare/cloudflared:latest
+    restart: always
+    command: tunnel --no-autoupdate run
+    env_file:
+      - .env
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
