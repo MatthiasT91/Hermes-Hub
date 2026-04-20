@@ -169,8 +169,10 @@ async function loadPool() {
 }
 
 function renderPool(pool) {
+  // Update Center Pool
   if (!pool || pool.length === 0) {
     modelPoolEl.innerHTML = `<div class="empty-state" style="padding: 2rem;">No peers connected.</div>`;
+    nodeListEl.innerHTML = `<div style="font-size: 0.6rem; color: var(--text-muted); padding: 1rem;">No peers online.</div>`;
     return;
   }
 
@@ -180,6 +182,14 @@ function renderPool(pool) {
         <div style="font-weight: 600; font-size: 0.85rem;">${node.name} ${node.approved ? '' : '(PENDING)'}</div>
         <div style="font-family: 'JetBrains Mono'; font-size: 0.65rem; color: var(--accent-neon);">${node.models.join(', ') || 'No models'}</div>
       </div>
+      <div class="status-dot ${node.status === 'online' ? 'status-online' : 'status-offline'}"></div>
+    </div>
+  `).join('');
+
+  // Update Sidebar Peer List
+  nodeListEl.innerHTML = pool.map(node => `
+    <div class="node-row">
+      <div class="node-name">${node.name}</div>
       <div class="status-dot ${node.status === 'online' ? 'status-online' : 'status-offline'}"></div>
     </div>
   `).join('');

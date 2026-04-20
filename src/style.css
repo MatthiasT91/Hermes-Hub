@@ -38,6 +38,15 @@ body {
     radial-gradient(circle at 0% 0%, rgba(0, 245, 255, 0.05) 0%, transparent 40%);
 }
 
+body.active-donor {
+  background: radial-gradient(circle at center, rgba(138, 43, 226, 0.1) 0%, #020205 100%) !important;
+}
+
+body.active-donor .sidebar {
+  border-right: 1px solid var(--accent-neon);
+  box-shadow: 4px 0 20px rgba(0, 245, 255, 0.1);
+}
+
 #app {
   display: flex;
   height: 100vh;
@@ -104,37 +113,28 @@ body {
   margin-top: 1rem;
 }
 
-/* Node Cards */
-.node-card {
-  padding: 1rem;
-  margin-bottom: 12px;
-  cursor: pointer;
-  transition: var(--transition-smooth);
+/* Node Cards (Sidebar Peers) */
+.node-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative;
-  overflow: hidden;
+  padding: 0.8rem;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-glass);
+  transition: var(--transition-smooth);
 }
 
-.node-card:hover { background: rgba(255, 255, 255, 0.05); }
-
-.node-card.active {
+.node-row:hover {
+  background: rgba(255,255,255,0.05);
   border-color: var(--accent-gold);
-  background: rgba(255, 215, 0, 0.05);
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
 }
 
-.node-card.active::after {
-  content: 'ACTIVE BRAIN';
-  position: absolute;
-  right: 1.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.5rem;
-  font-weight: 700;
-  color: var(--accent-gold);
-  opacity: 0.6;
+.node-row .node-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .status-dot {
@@ -176,7 +176,6 @@ body {
   overflow: hidden;
 }
 
-/* Monitor Section */
 .monitor-section {
   flex: 2;
   display: flex;
@@ -215,7 +214,6 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Pool Section */
 .pool-section {
   flex: 1;
   display: flex;
@@ -238,8 +236,6 @@ body {
   background: rgba(255, 255, 255, 0.05);
 }
 
-
-/* Modals */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -282,17 +278,9 @@ body {
   100% { transform: scale(2); opacity: 0; }
 }
 
-.signal-meta {
-  display: flex; justify-content: space-between; font-size: 0.65rem; font-family: 'JetBrains Mono', monospace;
-  margin-bottom: 0.8rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-.data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-.pane { background: rgba(0,0,0,0.4); padding: 0.8rem; border-radius: 6px; font-size: 0.75rem; }
-.pane label { font-size: 0.5rem; color: var(--text-muted); display: block; margin-bottom: 5px; }
 pre { color: var(--accent-neon); overflow: hidden; text-overflow: ellipsis; }
 
-/* --- Hivemind Aesthetics & Onboarding --- */
+/* --- Hivemind Aesthetics --- */
 .onboarding-steps {
   display: flex;
   flex-direction: column;
@@ -337,22 +325,9 @@ pre { color: var(--accent-neon); overflow: hidden; text-overflow: ellipsis; }
   color: black;
 }
 
-.step-text {
-  flex: 1;
-}
-
-.step-text strong {
-  display: block;
-  font-size: 0.7rem;
-  letter-spacing: 1px;
-  color: var(--text-primary);
-}
-
-.step-text p {
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
+.step-text { flex: 1; }
+.step-text strong { display: block; font-size: 0.7rem; letter-spacing: 1px; color: var(--text-primary); }
+.step-text p { font-size: 0.6rem; color: var(--text-muted); margin-top: 2px; }
 
 .mini-btn {
   background: transparent;
@@ -366,24 +341,8 @@ pre { color: var(--accent-neon); overflow: hidden; text-overflow: ellipsis; }
   transition: all 0.2s;
 }
 
-.mini-btn:hover:not(:disabled) {
-  border-color: var(--accent-gold);
-  background: rgba(255, 215, 0, 0.1);
-}
-
-.mini-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-body.active-donor {
-  background: radial-gradient(circle at center, rgba(0, 245, 255, 0.05) 0%, var(--bg-deep) 100%);
-}
-
-body.active-donor .sidebar {
-  border-right: 1px solid var(--accent-neon);
-  box-shadow: 4px 0 20px rgba(0, 245, 255, 0.1);
-}
+.mini-btn:hover:not(:disabled) { border-color: var(--accent-gold); background: rgba(255, 215, 0, 0.1); }
+.mini-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 .processing-task-indicator {
   position: fixed;
@@ -398,61 +357,14 @@ body.active-donor .sidebar {
   display: flex;
   align-items: center;
   gap: 12px;
-  animation: pulse-glow 2s infinite;
+  animation: pulse-glow-task 2s infinite;
   z-index: 1000;
   pointer-events: none;
 }
 
-.processing-task-indicator span {
-  animation: spin 3s linear infinite;
-  display: inline-block;
-}
+.processing-task-indicator span { animation: spin 3s linear infinite; display: inline-block; }
 
-@keyframes pulse-glow {
-  0% { box-shadow: 0 0 10px rgba(0, 245, 255, 0.2); }
-  50% { box-shadow: 0 0 30px rgba(0, 245, 255, 0.6); }
-  100% { box-shadow: 0 0 10px rgba(0, 245, 255, 0.2); }
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* --- Hivemind Aesthetics --- */
-body.active-donor {
-  background: radial-gradient(circle at center, rgba(0, 245, 255, 0.05) 0%, var(--bg-deep) 100%);
-}
-
-body.active-donor .sidebar {
-  border-right: 1px solid var(--accent-neon);
-  box-shadow: 4px 0 20px rgba(0, 245, 255, 0.1);
-}
-
-.processing-task-indicator {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  padding: 1rem 2rem;
-  border-radius: 50px;
-  background: rgba(0, 245, 255, 0.1);
-  border: 1px solid var(--accent-neon);
-  color: var(--accent-neon);
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  animation: pulse-glow 2s infinite;
-  z-index: 1000;
-  pointer-events: none;
-}
-
-.processing-task-indicator span {
-  animation: spin 3s linear infinite;
-  display: inline-block;
-}
-
-@keyframes pulse-glow {
+@keyframes pulse-glow-task {
   0% { box-shadow: 0 0 10px rgba(0, 245, 255, 0.2); }
   50% { box-shadow: 0 0 30px rgba(0, 245, 255, 0.6); }
   100% { box-shadow: 0 0 10px rgba(0, 245, 255, 0.2); }
