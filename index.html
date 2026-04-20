@@ -30,32 +30,42 @@
           <div style="font-size: 0.6rem; color: var(--accent-neon);">SIGNALS INTERCEPTED</div>
         </div>
 
-        <div class="security-vault glass-card"
-          style="margin-bottom: 2rem; padding: 1.2rem; border: 1px solid rgba(0, 229, 255, 0.2);">
-          <div style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 0.5rem;">SECURITY
-            VAULT</div>
-          <div id="current-token-display"
-            style="font-family: 'JetBrains Mono'; font-size: 0.6rem; color: var(--text-secondary); word-break: break-all; margin-bottom: 1rem;">
-            ACTIVE TOKEN: HIDDEN</div>
-          <button id="gen-auth-btn" class="add-node-btn"
-            style="background: rgba(0, 229, 255, 0.1); border-color: var(--accent-neon); color: var(--accent-neon); font-size: 0.6rem;">
-            GENERATE UNIVERSAL TOKEN
-          </button>
+        <div class="onboarding-steps">
+          <div class="sidebar-section-title">HIVE ONBOARDING</div>
+          
+          <div class="step-item" id="step-1-card">
+            <div class="step-num">1</div>
+            <div class="step-text">
+              <strong>IDENTIFY</strong>
+              <p id="profile-status">Create your operator profile</p>
+            </div>
+            <button id="setup-identity-btn" class="mini-btn">SETUP</button>
+          </div>
+
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-text">
+              <strong>START LOCAL AI</strong>
+              <p>Ollama, LM Studio, etc.</p>
+            </div>
+          </div>
+
+          <div class="step-item" id="step-3-card">
+            <div class="step-num">3</div>
+            <div class="step-text">
+              <strong>PULSE</strong>
+              <p>Link your GPU to Hivemind</p>
+            </div>
+            <button id="pulse-btn" class="mini-btn" disabled>CONNECT</button>
+          </div>
         </div>
 
-        <section>
-          <div class="sidebar-section-title">ACTIVE NODES</div>
+        <section style="margin-top: 2rem;">
+          <div class="sidebar-section-title">NETWORK PEERS</div>
           <div id="node-list" class="node-list">
-            <!-- Nodes -->
+            <!-- Peers list -->
           </div>
-          <button id="add-node-btn" class="add-node-btn">
-            + REGISTER NEW BRAIN
-          </button>
         </section>
-
-        <button id="join-network-btn" class="add-node-btn" style="margin-top: 1rem; background: rgba(0, 245, 255, 0.05); border-color: var(--accent-neon); color: var(--accent-neon);">
-          🌐 JOIN THE NETWORK
-        </button>
       </div>
     </aside>
 
@@ -107,46 +117,60 @@
       </div>
     </main>
 
-    <!-- Join Network Modal -->
-    <div id="join-modal" class="modal-overlay">
+    <!-- Step 1: Identity Modal -->
+    <div id="identity-modal" class="modal-overlay">
       <div class="modal glass">
-        <h3>Become a Network Contributor</h3>
-        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.5;">
-          Connect your local AI directly through this browser tab. <br><br>
-          <strong style="color: var(--accent-neon);">Requirement:</strong> You must start Ollama with <code>OLLAMA_ORIGINS="*"</code> so this page can talk to your GPU. <i>(No Cloudflare Tunnels required!)</i>
+        <h3>Operator Registration</h3>
+        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+          Your identity is tied to your unique API Key. This secures your node and ensures you have priority access.
         </p>
         <div class="form-group">
-          <label>CONTRIBUTOR NAME</label>
-          <input type="text" id="join-name-input" placeholder="e.g. Phoenix-Brain">
+          <label>OPERATOR NAME</label>
+          <input type="text" id="id-name-input" placeholder="e.g. Commander Murph">
         </div>
-        <div class="form-group">
-          <label>OWNER API KEY (Optional Setup)</label>
-          <input type="password" id="join-key-input" placeholder="Paste your key to resume ownership">
-        </div>
-        <div id="join-result" style="display: none; margin-bottom: 1rem; padding: 1rem; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;"></div>
+        <div id="id-result" style="display: none; margin-bottom: 1rem; padding: 1rem; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;"></div>
         <div style="display: flex; gap: 12px; margin-top: 1rem;">
-          <button id="join-cancel-btn" class="add-node-btn" style="flex: 1;">CANCEL</button>
-          <button id="join-submit-btn" class="add-node-btn" style="flex: 2; background: var(--accent-gold); color: black; font-weight: 700;">CONNECT LOCAL NODE</button>
+          <button id="id-cancel-btn" class="add-node-btn" style="flex: 1;">CANCEL</button>
+          <button id="id-save-btn" class="add-node-btn" style="flex: 2; background: var(--accent-gold); color: black; font-weight: 700;">SECURE IDENTITY</button>
         </div>
       </div>
     </div>
 
-    <!-- Register Brain Modal (Admin) -->
+    <!-- Step 3: Pulse Modal -->
+    <div id="join-modal" class="modal-overlay">
+      <div class="modal glass">
+        <h3>Neural Pulse Connection</h3>
+        <div id="scan-status" style="margin-bottom: 1.5rem;">
+          <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.5;">
+            Linking <span id="operator-tag" style="color: var(--accent-neon); font-weight: 700;">...</span> to the distributed network.
+          </p>
+          <div style="background: rgba(0,0,0,0.3); padding: 1rem; border: 1px solid var(--border-glass); border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;">
+            <div id="model-discovery-list">Scanning localhost models...</div>
+          </div>
+        </div>
+        <div id="join-result" style="display: none; margin-bottom: 1rem; padding: 1rem; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;"></div>
+        <div style="display: flex; gap: 12px;">
+          <button id="join-cancel-btn" class="add-node-btn" style="flex: 1;">CANCEL</button>
+          <button id="join-submit-btn" class="add-node-btn" style="flex: 2; background: var(--accent-gold); color: black; font-weight: 700;">INJECT INTO HIVEMIND</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin: Deploy Modal (Hidden/Manual) -->
     <div id="add-node-modal" class="modal-overlay">
       <div class="modal glass">
-        <h3>Deploy New Brain</h3>
+        <h3>Override Deploy</h3>
         <div class="form-group">
           <label>IDENTITY</label>
-          <input type="text" id="node-name-input" placeholder="e.g. Phoenix-1">
+          <input type="text" id="node-name-input" placeholder="e.g. Server-1">
         </div>
         <div class="form-group">
-          <label>ENDPOINT URL (HTTPS)</label>
-          <input type="text" id="node-url-input" placeholder="https://something.xyz/v1">
+          <label>URL</label>
+          <input type="text" id="node-url-input" placeholder="https://external.xyz/v1">
         </div>
         <div style="display: flex; gap: 12px; margin-top: 2rem;">
           <button id="cancel-node-btn" class="add-node-btn" style="flex: 1;">CANCEL</button>
-          <button id="save-node-btn" class="add-node-btn"
-            style="flex: 2; background: var(--accent-gold); color: black; font-weight: 700;">DEPLOY</button>
+          <button id="save-node-btn" class="add-node-btn" style="flex: 2; background: var(--accent-gold); color: black; font-weight: 700;">DEPLOY</button>
         </div>
       </div>
     </div>
