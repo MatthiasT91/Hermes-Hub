@@ -35,56 +35,85 @@ function getState() {
   return JSON.parse(fs.readFileSync(DATA_PATH, 'utf8'));
 }
 
-// 🛰️ The Signal Interceptor (Relay)
+// 🛰️ Phase 2: Intelligent Routing & Idle Logic
 app.post('/v1/chat/completions', async (req, res) => {
-  // 🛡️ Security Guard
+  // 1. Authenticate Request
   const authHeader = req.headers.authorization;
-  const expectedToken = `Bearer ${process.env.HERMES_AUTH_TOKEN}`;
+  const rawToken = authHeader?.replace('Bearer ', '') || '';
+  const isAdmin = process.env.HERMES_AUTH_TOKEN && rawToken === process.env.HERMES_AUTH_TOKEN;
+  const isRegisteredNode = modelPool.has(rawToken);
 
-  if (process.env.HERMES_AUTH_TOKEN && authHeader !== expectedToken) {
+  if (!isAdmin && !isRegisteredNode) {
     console.warn(`🛑 Unauthorized access attempt from ${req.ip}`);
-    return res.status(401).json({ error: { message: "Unauthorized: Invalid Hermes Auth Token." } });
+    return res.status(401).json({ error: { message: "Unauthorized: Invalid API Key. Please join the network to receive a key." } });
   }
 
-  const state = getState();
-  const activeNode = state.nodes.find(n => n.id === state.activeNodeId);
+  const requestedModel = req.body.model;
+  if (!requestedModel) {
+    return res.status(400).json({ error: { message: "Bad Request: No 'model' specified." } });
+  }
+
+  // 2. Find Target Node Hosting the Model
+  let targetNode = null;
+  let targetNodeKey = null;
+
+  for (const [key, node] of modelPool) {
+    if (node.approved && node.status !== 'offline' && node.models.includes(requestedModel)) {
+      targetNode = node;
+      targetNodeKey = key;
+      break; 
+    }
+  }
+
+  if (!targetNode) {
+    return res.status(404).json({ error: { message: `Relay Failed: No approved/online brain found hosting model '${requestedModel}'.` } });
+  }
+
+  // 3. Apply Idle Logic & Priority Architecture
+  const isOwnerRequesting = rawToken === targetNodeKey;
+  
+  if (isOwnerRequesting) {
+    // Owner is using their own brain. Mark as actively in-use to lock out borrowers.
+    targetNode.lastUsedByOwner = Date.now();
+  } else if (!isAdmin) {
+    // Borrower is trying to use a brain. Check the 5-Minute Idle Lock.
+    const idleTimeMillis = Date.now() - (targetNode.lastUsedByOwner || 0);
+    const idleLockMillis = 5 * 60 * 1000; // 5 minutes
+    
+    if (idleTimeMillis < idleLockMillis) {
+      const remainingSeconds = Math.ceil((idleLockMillis - idleTimeMillis) / 1000);
+      return res.status(423).json({ 
+        error: { 
+          message: `Access Denied: Owner is currently using this brain. Please try again after a 5-minute idle period. (Locked for ${remainingSeconds}s)` 
+        } 
+      });
+    }
+  }
+
+  // 4. Proceed with Signal Capture & Routing
   const signalId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 
-  // Emit 'Capture initiated'
   io.emit('signal_start', {
     id: signalId,
     timestamp: new Date().toISOString(),
-    node: activeNode ? activeNode.name : 'NONE',
+    node: targetNode.name,
     request: req.body
   });
 
-  if (!activeNode || activeNode.status === 'offline') {
-    const errorMsg = "Relay Failed: No active brain or node offline.";
-    io.emit('signal_error', { id: signalId, error: errorMsg });
-    return res.status(503).json({ error: { message: errorMsg } });
-  }
-
   try {
     const startTime = Date.now();
-    const response = await axios.post(`${activeNode.url}/chat/completions`, req.body, {
+    const response = await axios.post(`${targetNode.url}/chat/completions`, req.body, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 90000
     });
 
     const latency = Date.now() - startTime;
-
-    // Emit 'Success/Intercepted'
-    io.emit('signal_success', {
-      id: signalId,
-      latency,
-      response: response.data
-    });
-
+    io.emit('signal_success', { id: signalId, latency, response: response.data });
     res.json(response.data);
   } catch (error) {
     console.error('❌ Signal Drop:', error.message);
     io.emit('signal_error', { id: signalId, error: error.message });
-    res.status(500).json({ error: { message: `Relay failed: ${error.message}` } });
+    res.status(502).json({ error: { message: `Relay failed communicating with node ${targetNode.name}: ${error.message}` } });
   }
 });
 
