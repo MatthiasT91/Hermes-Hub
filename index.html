@@ -91,8 +91,16 @@
             <span style="font-size: 0.6rem; color: var(--text-muted);">AVAILABLE BRAINS ON THE NETWORK</span>
           </div>
           <div id="model-pool" class="model-pool">
-            <div class="empty-state" style="height: auto; padding: 2rem;">
-              <span>No models registered yet. Be the first to join!</span>
+            <div class="empty-state" style="height: auto; padding: 2rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; text-align: left; background: rgba(0, 245, 255, 0.05); border: 1px dashed var(--accent-neon); border-radius: 8px;">
+              <h4 style="color: var(--accent-neon); margin-bottom: 0.5rem;">WAITING FOR MODELS...</h4>
+              <p style="font-size: 0.8rem; color: var(--text-primary);">Contribute your local brain to the network to get started.</p>
+              <ol style="font-size: 0.75rem; color: var(--text-secondary); margin-left: 1.2rem; margin-top: 0.5rem; line-height: 1.6;">
+                <li>Start your local model (Ollama, LM Studio, vLLM)</li>
+                <li>Expose it to the internet (e.g., using Cloudflare Tunnel)</li>
+                <li>Click <strong>🌐 JOIN THE NETWORK</strong> on the sidebar</li>
+                <li>Enter your display name and public endpoint URL</li>
+                <li>Wait for the Admin to approve your connection</li>
+              </ol>
             </div>
           </div>
         </div>

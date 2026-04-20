@@ -3,7 +3,10 @@ import { io } from 'socket.io-client';
 
 // Initial State
 let nodes = JSON.parse(localStorage.getItem('hermes_nodes')) || [];
-let activeNodeId = null;
+nodes = nodes.filter(n => n.id !== 'primary-core'); // Force clean old ghost node from browser cache
+localStorage.setItem('hermes_nodes', JSON.stringify(nodes));
+let activeNodeId = nodes.length > 0 ? nodes[0].id : null;
+
 let totalSignals = 0;
 
 // Socket Connection
