@@ -21,10 +21,18 @@
       </div>
 
       <div class="sidebar-content">
-        <div class="net-stats glass-card" style="margin-bottom: 1.5rem; padding: 1.2rem; border: 1px solid var(--accent-gold-glow);">
+        <div class="net-stats glass-card" style="margin-bottom: 2rem; padding: 1.2rem; border: 1px solid var(--accent-gold-glow);">
           <div style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 1px;">NETWORK LOAD</div>
           <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-gold);" id="total-signals">0</div>
           <div style="font-size: 0.6rem; color: var(--accent-neon);">SIGNALS INTERCEPTED</div>
+        </div>
+
+        <div class="security-vault glass-card" style="margin-bottom: 2rem; padding: 1.2rem; border: 1px solid rgba(0, 229, 255, 0.2);">
+          <div style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 0.5rem;">SECURITY VAULT</div>
+          <div id="current-token-display" style="font-family: 'JetBrains Mono'; font-size: 0.6rem; color: var(--text-secondary); word-break: break-all; margin-bottom: 1rem;">ACTIVE TOKEN: HIDDEN</div>
+          <button id="gen-auth-btn" class="add-node-btn" style="background: rgba(0, 229, 255, 0.1); border-color: var(--accent-neon); color: var(--accent-neon); font-size: 0.6rem;">
+            GENERATE UNIVERSAL TOKEN
+          </button>
         </div>
 
         <section>

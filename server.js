@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
+import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
 
@@ -96,6 +97,30 @@ app.post('/api/select-node', (req, res) => {
 
 app.get('/api/state', (req, res) => {
   res.json(getState());
+});
+
+// 🔐 Security Management
+app.post('/api/security/generate', (req, res) => {
+  try {
+    const newToken = uuidv4();
+    const envContent = fs.readFileSync('.env', 'utf8');
+    
+    // Replace or add HERMES_AUTH_TOKEN
+    let newEnv;
+    if (envContent.includes('HERMES_AUTH_TOKEN=')) {
+      newEnv = envContent.replace(/HERMES_AUTH_TOKEN=.*/, `HERMES_AUTH_TOKEN=${newToken}`);
+    } else {
+      newEnv = envContent + `\nHERMES_AUTH_TOKEN=${newToken}`;
+    }
+    
+    fs.writeFileSync('.env', newEnv);
+    process.env.HERMES_AUTH_TOKEN = newToken; // Update in-memory for immediate effect
+    
+    console.log(`🔐 NEW SECURITY KEY GENERATED VIA DASHBOARD`);
+    res.json({ success: true, token: newToken });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 app.use(express.static(path.join(__dirname, 'dist')));

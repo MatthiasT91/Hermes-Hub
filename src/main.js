@@ -23,6 +23,8 @@ const addNodeBtn = document.getElementById('add-node-btn');
 const addNodeModal = document.getElementById('add-node-modal');
 const cancelNodeBtn = document.getElementById('cancel-node-btn');
 const saveNodeBtn = document.getElementById('save-node-btn');
+const genAuthBtn = document.getElementById('gen-auth-btn');
+const currentTokenDisplay = document.getElementById('current-token-display');
 
 function init() {
   renderNodes();
@@ -52,6 +54,23 @@ function init() {
       renderNodes();
       checkNodeStatus(newNode);
       addNodeModal.classList.remove('active');
+    }
+  });
+
+  genAuthBtn.addEventListener('click', async () => {
+    if (confirm("Regenerate Universal Auth Token? This will lock out all agents until they are updated with the new key.")) {
+      try {
+        const response = await fetch('/api/security/generate', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+          currentTokenDisplay.innerText = `NEW TOKEN: ${data.token}`;
+          currentTokenDisplay.style.color = "var(--accent-neon)";
+          navigator.clipboard.writeText(data.token);
+          alert("Token Generated and Saved to .env! (Copied to Clipboard)");
+        }
+      } catch (e) {
+        alert("Failed to generate token. Check server logs.");
+      }
     }
   });
 
