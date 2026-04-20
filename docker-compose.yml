@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  hermes-hub:
+    build: .
+    container_name: hermes-hub
+    ports:
+      - "8080:8080"
+    restart: always
+    volumes:
+      - .:/app
+      - /app/node_modules

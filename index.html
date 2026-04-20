@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hermes Hub | Distributed Network Command</title>
+  <meta name="description" content="Premium dashboard for distributed agent networks.">
+</head>
+<body>
+  <div id="app">
+    <!-- Sidebar -->
+    <aside class="sidebar glass">
+      <div class="sidebar-header">
+        <div class="logo">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="var(--accent-gold)" />
+          </svg>
+          <span>HERMES HUB</span>
+        </div>
+      </div>
+
+      <div class="sidebar-content">
+        <div class="net-stats glass-card" style="margin-bottom: 1.5rem; padding: 1.2rem; border: 1px solid var(--accent-gold-glow);">
+          <div style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 1px;">NETWORK LOAD</div>
+          <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-gold);" id="total-signals">0</div>
+          <div style="font-size: 0.6rem; color: var(--accent-neon);">SIGNALS INTERCEPTED</div>
+        </div>
+
+        <section>
+          <div class="sidebar-section-title">ACTIVE NODES</div>
+          <div id="node-list" class="node-list">
+            <!-- Nodes -->
+          </div>
+          <button id="add-node-btn" class="add-node-btn">
+            + REGISTER NEW BRAIN
+          </button>
+        </section>
+      </div>
+    </aside>
+
+    <!-- Main Dashboard -->
+    <main class="main-dashboard">
+      <header class="top-bar glass">
+        <div class="active-node-badge">
+          <div class="status-dot status-online"></div>
+          <span id="active-node-display">AWAITING LINK...</span>
+        </div>
+        <div class="model-meta" id="model-badge">PROTOCOL 1.0</div>
+      </header>
+
+      <div class="dashboard-content">
+        <!-- Signal Monitor (Top Half) -->
+        <div class="monitor-section">
+          <div class="section-header">
+            <h3>SIGNAL MONITOR</h3>
+            <span style="font-size: 0.6rem; color: var(--text-muted);">REAL-TIME AGENT INTERCEPT</span>
+          </div>
+          <div id="signal-stream" class="signal-stream">
+            <div class="empty-state">
+              <div class="pulse-ring"></div>
+              <span>Listening for network oscillations...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Manual Relay (Bottom Half) -->
+        <div class="relay-section glass-card">
+          <div class="relay-messages" id="relay-messages">
+             <div class="msg system">Establishing decentralized relay connection... Ready for manual override.</div>
+          </div>
+          <div class="input-area">
+            <textarea id="prompt-input" placeholder="Inject manual command into the relay..."></textarea>
+            <button id="send-btn" class="send-btn">SEND</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="add-node-modal" class="modal-overlay">
+      <div class="modal glass">
+        <h3>Deploy New Brain</h3>
+        <div class="form-group">
+          <label>IDENTITY</label>
+          <input type="text" id="node-name-input" placeholder="e.g. Phoenix-1">
+        </div>
+        <div class="form-group">
+          <label>ENDPOINT URL (HTTPS)</label>
+          <input type="text" id="node-url-input" placeholder="https://something.xyz/v1">
+        </div>
+        <div style="display: flex; gap: 12px; margin-top: 2rem;">
+          <button id="cancel-node-btn" class="add-node-btn" style="flex: 1;">CANCEL</button>
+          <button id="save-node-btn" class="add-node-btn" style="flex: 2; background: var(--accent-gold); color: black; font-weight: 700;">DEPLOY</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
