@@ -56,7 +56,7 @@ io.on('connection', (socket) => {
       lastSeen: new Date().toISOString()
     });
 
-    socket.emit('registration_success', { apiKey, message: 'Connected to Hivemind.' });
+    socket.emit('registration_success', { apiKey, message: 'Connected to The Hermes Collective.' });
     console.log(`🌐 Browser Node linked: ${name} (Models: ${models?.length || 0})`);
     io.emit('pool_update', getPoolList());
   });

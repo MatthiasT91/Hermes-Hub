@@ -73,7 +73,7 @@ function init() {
     joinResult.style.display = 'none';
     joinResult.innerText = '';
     joinSubmitBtn.disabled = false;
-    joinSubmitBtn.innerText = 'INJECT INTO HIVEMIND';
+    joinSubmitBtn.innerText = 'INJECT INTO COLLECTIVE';
     joinModal.classList.add('active');
     
     // Auto-scan on modal open
