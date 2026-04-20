@@ -224,6 +224,7 @@ const getModelsHandler = (req, res) => {
           object: 'model',
           created: now,
           owned_by: node.name,
+          status: 'online',
           permission: [{
             id: "modelperm-" + uuidv4().substr(0,8),
             object: "model_permission",
