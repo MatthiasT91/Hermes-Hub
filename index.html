@@ -76,11 +76,11 @@
           <div class="status-dot status-online"></div>
           <span id="active-node-display">AWAITING LINK...</span>
         </div>
-        <div class="model-meta" id="model-badge">PROTOCOL 1.0</div>
+        <div class="model-meta" id="model-badge">COLLECTIVE 2.0</div>
       </header>
 
       <div class="dashboard-content">
-        <!-- Signal Monitor (Top Half) -->
+        <!-- Signal Monitor -->
         <div class="monitor-section">
           <div class="section-header">
             <h3>SIGNAL MONITOR</h3>
@@ -94,28 +94,45 @@
           </div>
         </div>
 
-        <!-- Model Pool (Bottom Half) -->
+        <!-- Model Pool -->
         <div class="pool-section glass-card">
           <div class="section-header" style="margin-bottom: 1rem;">
             <h3>MODEL POOL</h3>
-            <span style="font-size: 0.6rem; color: var(--text-muted);">AVAILABLE BRAINS ON THE NETWORK</span>
+            <span style="font-size: 0.6rem; color: var(--text-muted);">AVAILABLE BRAINS</span>
           </div>
           <div id="model-pool" class="model-pool">
-            <div class="empty-state" style="height: auto; padding: 2rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; text-align: left; background: rgba(0, 245, 255, 0.05); border: 1px dashed var(--accent-neon); border-radius: 8px;">
-              <h4 style="color: var(--accent-neon); margin-bottom: 0.5rem;">WAITING FOR MODELS...</h4>
-              <p style="font-size: 0.8rem; color: var(--text-primary);">Contribute your local brain to the network to get started.</p>
-              <ol style="font-size: 0.75rem; color: var(--text-secondary); margin-left: 1.2rem; margin-top: 0.5rem; line-height: 1.6;">
-                <li>Start your local model (Ollama, LM Studio, vLLM)</li>
-                <li>Expose it to the internet (e.g., using Cloudflare Tunnel)</li>
-                <li>Click <strong>🌐 JOIN THE NETWORK</strong> on the sidebar</li>
-                <li>Enter your display name and public endpoint URL</li>
-                <li>Wait for the Admin to approve your connection</li>
-              </ol>
-            </div>
+            <!-- Pool list -->
           </div>
         </div>
       </div>
     </main>
+
+    <!-- Right Sidebar (The Forge - Chat) -->
+    <aside class="sidebar right-sidebar glass">
+      <div class="sidebar-header">
+        <div class="logo" style="background: linear-gradient(135deg, var(--accent-neon), var(--accent-purple)); -webkit-background-clip: text;">
+          <span>THE FORGE</span>
+        </div>
+      </div>
+      
+      <div class="sidebar-content chat-container">
+        <div class="model-selector-wrapper">
+          <label style="font-size: 0.5rem; color: var(--text-muted); letter-spacing: 1px;">TARGET BRAIN</label>
+          <select id="chat-model-select" class="glass-input">
+            <option value="">Select a Model...</option>
+          </select>
+        </div>
+
+        <div id="chat-messages" class="chat-messages">
+          <div class="chat-placeholder">Choose a model and start a transmission...</div>
+        </div>
+
+        <div class="chat-input-wrapper">
+          <textarea id="chat-input" placeholder="Enter signal prompt..." rows="3"></textarea>
+          <button id="chat-send-btn">TRANSMIT</button>
+        </div>
+      </div>
+    </aside>
 
     <!-- Step 1: Identity Modal -->
     <div id="identity-modal" class="modal-overlay">
