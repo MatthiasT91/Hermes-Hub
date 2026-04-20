@@ -207,26 +207,28 @@ app.get('/api/pool', (req, res) => {
 // OpenAI-compatible /v1/models endpoint — shows all available models on the network
 app.get('/v1/models', (req, res) => {
   const allModels = [];
+  const now = Math.floor(Date.now() / 1000);
+
   for (const [key, node] of modelPool) {
     if (node.approved && node.status === 'online') {
       for (const model of node.models) {
         allModels.push({
           id: model,
           object: 'model',
-          owned_by: node.name,
-          status: node.status
+          created: now,
+          owned_by: node.name
         });
       }
     }
   }
 
-  // If pool is empty, return a placeholder so clients like Hermes CLI can verify the endpoint
+  // Fallback placeholder for tool verification
   if (allModels.length === 0) {
     allModels.push({
-      id: 'hermes-collective-meshing',
+      id: 'hermes-collective-awaiting-peers',
       object: 'model',
-      owned_by: 'hub',
-      status: 'awaiting_peers'
+      created: now,
+      owned_by: 'system'
     });
   }
 
