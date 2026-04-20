@@ -11,8 +11,9 @@
 
 <body>
   <div id="app">
-    <!-- Sidebar -->
-    <aside class="sidebar glass">
+    <!-- Sidebar: Control Panel (Left) -->
+    <button id="toggle-left-btn" class="sidebar-toggle left" title="Toggle Command Panel">⟨</button>
+    <aside class="sidebar left-sidebar glass" id="left-sidebar">
       <div class="sidebar-header">
         <div class="logo">
           <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -108,11 +109,13 @@
     </main>
 
     <!-- Right Sidebar (The Forge - Chat) -->
-    <aside class="sidebar right-sidebar glass">
-      <div class="sidebar-header">
+    <button id="toggle-right-btn" class="sidebar-toggle right" title="Toggle Forge Panel">⟩</button>
+    <aside class="sidebar right-sidebar glass" id="right-sidebar">
+      <div class="sidebar-header" style="justify-content: space-between;">
         <div class="logo" style="background: linear-gradient(135deg, var(--accent-neon), var(--accent-purple)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
           <span>THE FORGE</span>
         </div>
+        <button id="zen-chat-btn" title="Toggle Zen Mode" class="mini-btn" style="border: none; padding: 5px;">⛶</button>
       </div>
       
       <div class="sidebar-content chat-container">

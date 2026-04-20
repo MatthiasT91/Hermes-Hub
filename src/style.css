@@ -370,12 +370,69 @@ pre {
   text-overflow: ellipsis;
 }
 
-/* --- Dual Sidebar Layout --- */
+/* --- Dual Sidebar Layout & Toggles --- */
 .right-sidebar {
   width: 380px;
   border-left: 1px solid var(--border-glass);
-  border-right: none !important;
 }
+.left-sidebar {
+  width: 300px;
+}
+.sidebar {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
+  overflow: hidden;
+}
+
+.left-sidebar.collapsed { width: 0 !important; padding: 0 !important; border: none !important; }
+.right-sidebar.collapsed { width: 0 !important; padding: 0 !important; border: none !important; }
+
+.sidebar-toggle {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1000;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  color: var(--accent-neon);
+  padding: 1rem 0.4rem;
+  cursor: pointer;
+  border-radius: 0 8px 8px 0;
+  transition: all 0.2s;
+}
+
+.sidebar-toggle:hover { background: rgba(0, 245, 255, 0.1); color: white; }
+.sidebar-toggle.left { left: 0; }
+.sidebar-toggle.right { 
+  right: 0; 
+  border-radius: 8px 0 0 8px;
+  color: var(--accent-purple);
+}
+
+.left-sidebar.collapsed + .sidebar-toggle.left { left: 0; }
+
+/* Zen Mode (Full Screen Chat) */
+.main-dashboard {
+  transition: flex 0.3s ease, width 0.3s ease;
+}
+
+#app.zen-mode .left-sidebar, 
+#app.zen-mode .main-dashboard {
+  width: 0 !important;
+  flex: 0 !important;
+  display: none !important;
+}
+
+#app.zen-mode .right-sidebar {
+  width: 100% !important;
+  flex: 1 !important;
+}
+
+#app.zen-mode #toggle-left-btn,
+#app.zen-mode #toggle-right-btn {
+  display: none;
+}
+
+#app.zen-mode .sidebar-toggle { background: var(--bg-deep); }
 
 .chat-container {
   display: flex;
