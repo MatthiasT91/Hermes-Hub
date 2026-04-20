@@ -97,6 +97,12 @@ function init() {
     }
   });
 
+  setupIdentityBtn.addEventListener('click', () => {
+    idResult.style.display = 'none';
+    idNameInput.value = operatorName;
+    identityModal.classList.add('active');
+  });
+
   idCancelBtn.addEventListener('click', () => identityModal.classList.remove('active'));
 
   idSaveBtn.addEventListener('click', () => {
