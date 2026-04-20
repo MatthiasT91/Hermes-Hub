@@ -28,7 +28,7 @@ const DATA_PATH = path.join(__dirname, 'network_state.json');
 
 // Initialize state
 if (!fs.existsSync(DATA_PATH)) {
-  fs.writeFileSync(DATA_PATH, JSON.stringify({ activeNodeId: 'primary-core', nodes: [] }));
+  fs.writeFileSync(DATA_PATH, JSON.stringify({ activeNodeId: null, nodes: [] }));
 }
 
 function getState() {
