@@ -176,6 +176,9 @@ app.post('/v1/chat/completions', async (req, res) => {
       pendingWebTasks.set(taskId, { resolve, reject, timer });
     });
 
+    // 7. Relay task to browser via socket (Using ID from pool for UI tracking)
+    io.emit('signal_start', { id: taskId, targetId: targetNodeKey });
+
     // Send the task to the specific browser running the model
     io.to(targetNode.socketId).emit('compute_task', {
       taskId,
@@ -185,8 +188,18 @@ app.post('/v1/chat/completions', async (req, res) => {
     const responseData = await taskPromise;
     totalSignalsProcessed++;
 
-    const latency = Date.now() - startTime;
-    io.emit('signal_success', { id: signalId, latency, response: responseData });
+    io.emit('signal_complete', { id: taskId, targetId: targetNodeKey });
+
+    // 8. Log anonymously for Admin Dashboard
+    io.emit('signal_intercept', {
+      id: taskId,
+      source: 'Agent',
+      request: { model: req.body.model, messages: req.body.messages },
+      response: responseData.choices[0].message.content,
+      latency: Date.now() - startTime,
+      timestamp: new Date().toLocaleTimeString()
+    });
+
     res.json(responseData);
   } catch (error) {
     console.error('❌ Signal Drop:', error.message);
