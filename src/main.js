@@ -91,7 +91,7 @@ function init() {
       }
 
       // Found models! Send to Hub via WebSocket
-      socket.emit('register_browser_node', { name, models: discoveredModels, ownerKey });
+      socket.emit('register_browser_node', { name, models: discoveredModels, ownerKey: ownerKey || localStorage.getItem('hermes_hivemind_key') });
 
       joinResult.style.display = 'block';
       joinResult.style.background = 'rgba(255, 170, 0, 0.1)';
@@ -110,6 +110,7 @@ function init() {
 
   // Handle successful registration from Hub
   socket.on('registration_success', (data) => {
+    localStorage.setItem('hermes_hivemind_key', data.apiKey);
     joinResult.style.background = 'rgba(0, 255, 157, 0.1)';
     joinResult.style.color = 'var(--status-online)';
     joinResult.innerHTML = `
@@ -127,6 +128,13 @@ function init() {
     // Visual Polish for "Active Donor" layout
     document.body.classList.add('active-donor');
   });
+
+  // Auto-Connect if we have a saved key
+  const savedKey = localStorage.getItem('hermes_hivemind_key');
+  if (savedKey) {
+    console.log("Hivemind Key detected, ready for reconnect...");
+    // If we want it fully auto, we'd need to save the name too
+  }
 
   // Security
   genAuthBtn.addEventListener('click', async () => {
