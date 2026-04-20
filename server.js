@@ -205,7 +205,8 @@ app.get('/api/pool', (req, res) => {
 });
 
 // OpenAI-compatible /v1/models endpoint — shows all available models on the network
-app.get('/v1/models', (req, res) => {
+// OpenAI-compatible /v1/models endpoint
+const getModelsHandler = (req, res) => {
   const allModels = [];
   const now = Math.floor(Date.now() / 1000);
 
@@ -216,24 +217,42 @@ app.get('/v1/models', (req, res) => {
           id: model,
           object: 'model',
           created: now,
-          owned_by: node.name
+          owned_by: node.name,
+          permission: [{
+            id: "modelperm-" + uuidv4().substr(0,8),
+            object: "model_permission",
+            created: now,
+            allow_create_engine: false,
+            allow_sampling: true,
+            allow_logprobs: true,
+            allow_search_indices: false,
+            allow_view: true,
+            allow_fine_tuning: false,
+            organization: "*",
+            group: null,
+            is_blocking: false
+          }]
         });
       }
     }
   }
 
-  // Fallback placeholder for tool verification
   if (allModels.length === 0) {
     allModels.push({
       id: 'hermes-collective-awaiting-peers',
       object: 'model',
       created: now,
-      owned_by: 'system'
+      owned_by: 'system',
+      permission: []
     });
   }
 
+  console.log(`📡 Model List Requested by ${req.ip} - Returning ${allModels.length} models.`);
   res.json({ object: 'list', data: allModels });
-});
+};
+
+app.get('/v1/models', getModelsHandler);
+app.get('/models', getModelsHandler);
 
 function getPoolList() {
   const list = [];
