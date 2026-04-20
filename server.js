@@ -42,20 +42,26 @@ let totalSignalsProcessed = 0;
 
 // Handle Socket Connections
 io.on('connection', (socket) => {
-  socket.on('register_browser_node', (data) => {
-    const { ownerKey, name, models } = data;
-    const apiKey = ownerKey || uuidv4();
-    const existingNode = modelPool.get(apiKey);
-
+    // 1. Get or create node from persistent state
+    const state = getState();
+    const existingNode = state.nodes.find(n => n.id === apiKey);
+    
+    // 2. Update In-Memory Pool
     modelPool.set(apiKey, {
       name: name || 'Anonymous Network Node',
       socketId: socket.id,
       models: models || [],
-      status: existingNode?.approved ? 'online' : 'pending',
-      approved: existingNode?.approved || false,
-      lastUsedByOwner: existingNode?.lastUsedByOwner || 0,
+      status: 'online',
+      approved: existingNode ? existingNode.approved : false,
+      lastUsedByOwner: 0,
       lastSeen: new Date().toISOString()
     });
+
+    // 3. Save Node Identity to disk if new
+    if (!existingNode) {
+      state.nodes.push({ id: apiKey, name, approved: false });
+      fs.writeFileSync(DATA_PATH, JSON.stringify(state, null, 2));
+    }
 
     socket.emit('registration_success', { apiKey, message: 'Connected to The Hermes Collective.' });
     console.log(`🌐 Browser Node linked: ${name} (Models: ${models?.length || 0})`);
