@@ -208,15 +208,28 @@ app.get('/api/pool', (req, res) => {
 app.get('/v1/models', (req, res) => {
   const allModels = [];
   for (const [key, node] of modelPool) {
-    for (const model of node.models) {
-      allModels.push({
-        id: model,
-        object: 'model',
-        owned_by: node.name,
-        status: node.status
-      });
+    if (node.approved && node.status === 'online') {
+      for (const model of node.models) {
+        allModels.push({
+          id: model,
+          object: 'model',
+          owned_by: node.name,
+          status: node.status
+        });
+      }
     }
   }
+
+  // If pool is empty, return a placeholder so clients like Hermes CLI can verify the endpoint
+  if (allModels.length === 0) {
+    allModels.push({
+      id: 'hermes-collective-meshing',
+      object: 'model',
+      owned_by: 'hub',
+      status: 'awaiting_peers'
+    });
+  }
+
   res.json({ object: 'list', data: allModels });
 });
 
