@@ -148,38 +148,90 @@ function init() {
   socket.on('signal_start', addSignalCard);
   socket.on('signal_success', (data) => updateSignalCard(data, 'SUCCESS'));
   socket.on('signal_error', (data) => updateSignalCard(data, 'ERROR'));
-  // Neural Mesh Rendering
+  // --- Neural Mesh Visualizer (AI Room) ---
   const neuralMesh = document.getElementById('neural-mesh');
-  
-  function renderMesh() {
-    // Keep overlay and scanline
-    const overlay = neuralMesh.querySelector('.mesh-overlay');
-    neuralMesh.innerHTML = '';
-    neuralMesh.appendChild(overlay);
+  const botMap = new Map(); // Keep track of bot elements
+  const avatarPool = ['🐕', '🐈', '🐦', '🦊', '🦉', '🐸', '🐢', '🦖'];
 
-    const nodes = document.querySelectorAll('.node-row'); // Use peer list to spawn bots
-    nodes.forEach(node => {
-      const name = node.querySelector('strong').innerText;
-      const id = node.dataset.id;
-      const isOnline = node.querySelector('.status-dot').classList.contains('status-online');
+  function spawnBot(nodeId, name) {
+    if (botMap.has(nodeId)) return;
+    
+    const bot = document.createElement('div');
+    bot.className = 'pixel-bot';
+    bot.id = `bot-${nodeId}`;
+    
+    // Pick an avatar based on ID hash
+    const avatarIdx = Math.abs(nodeId.split('').reduce((a,b)=>a+b.charCodeAt(0),0)) % avatarPool.length;
+    const avatar = avatarPool[avatarIdx];
+
+    bot.innerHTML = `
+      <div class="bot-sprite">${avatar}</div>
+      <div class="bot-tag">${name}</div>
+    `;
+    
+    // Random initial position
+    bot.style.left = Math.random() * 80 + 10 + '%';
+    bot.style.top = Math.random() * 60 + 20 + '%';
+    
+    neuralMesh.appendChild(bot);
+    botMap.set(nodeId, {
+      el: bot,
+      x: Math.random() * 80 + 10,
+      y: Math.random() * 60 + 20,
+      vx: (Math.random() - 0.5) * 0.1,
+      vy: (Math.random() - 0.5) * 0.1
+    });
+  }
+
+  function updateMesh() {
+    botMap.forEach((bot, id) => {
+      // 1. Autonomous Movement (Wander)
+      bot.x += bot.vx;
+      bot.y += bot.vy;
       
-      if (isOnline) {
-        const bot = document.createElement('div');
-        bot.className = 'pixel-bot';
-        bot.id = `bot-${id}`;
-        bot.innerHTML = `
-          <div class="bot-sprite"></div>
-          <div class="bot-tag">${name}</div>
-        `;
-        neuralMesh.appendChild(bot);
+      // 2. Bounce off walls
+      if (bot.x < 5 || bot.x > 95) bot.vx *= -1;
+      if (bot.y < 10 || bot.y > 90) bot.vy *= -1;
+      
+      // 3. Randomize direction slightly
+      if (Math.random() < 0.01) {
+        bot.vx = (Math.random() - 0.5) * 0.1;
+        bot.vy = (Math.random() - 0.5) * 0.1;
+      }
+      
+      bot.el.style.left = `${bot.x}%`;
+      bot.el.style.top = `${bot.y}%`;
+    });
+    
+    requestAnimationFrame(updateMesh);
+  }
+
+  function syncMesh(pool) {
+    const activeIds = new Set(pool.map(n => n.id));
+    
+    // Remove offline bots
+    botMap.forEach((_, id) => {
+      if (!activeIds.has(id)) {
+        const bot = document.getElementById(`bot-${id}`);
+        if (bot) bot.remove();
+        botMap.delete(id);
+      }
+    });
+    
+    // Add new online bots
+    pool.forEach(node => {
+      if (node.status === 'online') {
+        spawnBot(node.id, node.name);
       }
     });
   }
 
+  requestAnimationFrame(updateMesh);
+
   socket.on('pool_update', (pool) => {
     renderPool(pool);
     updateModelSelect(pool);
-    renderMesh(); // Sync pixel mesh
+    syncMesh(pool); // Sync pixel mesh
   });
 
   socket.on('signal_start', (data) => {
