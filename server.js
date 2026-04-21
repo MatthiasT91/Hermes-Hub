@@ -240,57 +240,34 @@ app.get('/api/pool', (req, res) => {
 // OpenAI-compatible /v1/models endpoint — shows all available models on the network
 // OpenAI-compatible /v1/models endpoint
 const getModelsHandler = (req, res) => {
-  const allModels = [];
-  const now = Math.floor(Date.now() / 1000);
+  try {
+    const state = getState(); // Read current state
+    const allModels = [];
 
-  const addedModels = new Set();
-
-  // 1. Add Dynamic WebSocket Pool Models
-  for (const [key, node] of modelPool) {
-    if (node.approved && node.status === 'online') {
-      for (const model of node.models) {
-        if (!addedModels.has(model)) {
-          addedModels.add(model);
-          allModels.push(createModelObject(model, node.name, now));
+    if (state.nodes && Array.isArray(state.nodes)) {
+      state.nodes.forEach(node => {
+        // Check if the node has models registered
+        if (node.models && node.models.length > 0) {
+          node.models.forEach(model => {
+            // Avoid duplicates (e.g. if multiple nodes offer the same model)
+            if (!allModels.find(m => m.id === model.id)) {
+              allModels.push({
+                id: model.id,
+                name: model.name || model.id,
+                object: "model"
+              });
+            }
+          });
         }
-      }
+      });
     }
-  }
 
-  // 2. Add Static Fallback/Hub Nodes from Disk
-  const state = getState();
-  for (const node of state.nodes) {
-    if (node.approved !== false && node.status !== 'offline') {
-      const models = node.models || (node.model ? [node.model] : []);
-      for (const model of models) {
-        if (!addedModels.has(model)) {
-          addedModels.add(model);
-          allModels.push(createModelObject(model, node.name || 'Hermes Static Node', now));
-        }
-      }
-    }
+    console.log(`[Model API] Returning ${allModels.length} models.`);
+    res.json({ object: "list", data: allModels });
+  } catch (err) {
+    console.error("Error generating model list:", err);
+    res.status(500).json({ error: "Failed to fetch models" });
   }
-
-  function createModelObject(modelId, ownerName, timestamp) {
-    return {
-      id: modelId,
-      object: 'model',
-      created: timestamp,
-      owned_by: 'system'
-    };
-  }
-
-  if (allModels.length === 0) {
-    allModels.push({
-      id: 'hermes-collective-awaiting-peers',
-      object: 'model',
-      created: now,
-      owned_by: 'system'
-    });
-  }
-
-  console.log(`📡 Model List Requested by ${req.ip} - Returning ${allModels.length} models.`);
-  res.json({ object: 'list', data: allModels });
 };
 
 app.get('/v1/models', getModelsHandler);
