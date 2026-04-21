@@ -292,23 +292,65 @@ function syncMesh(pool) {
   pool.forEach(node => {
     if (node.status === 'online' && !botMap.has(node.id)) {
       const bot = document.createElement('div');
-      bot.className = 'pixel-bot';
+      bot.className = 'pixel-bot idle';
       bot.id = `bot-${node.id}`;
       const avatar = avatarPool[Math.abs(node.id.split('').reduce((a,b)=>a+b.charCodeAt(0),0)) % avatarPool.length];
       bot.innerHTML = `<div class="bot-sprite">${avatar}</div><div class="bot-tag">${node.name}</div>`;
-      bot.style.left = Math.random() * 80 + 10 + '%';
-      bot.style.top = Math.random() * 60 + 20 + '%';
+      
+      const startX = Math.random() * 80 + 10;
+      const startY = Math.random() * 60 + 20;
+      bot.style.left = startX + '%';
+      bot.style.top = startY + '%';
       neuralMesh.appendChild(bot);
-      botMap.set(node.id, { el: bot, x: parseFloat(bot.style.left), y: parseFloat(bot.style.top), vx: (Math.random()-0.5)*0.05, vy: (Math.random()-0.5)*0.05 });
+      
+      botMap.set(node.id, { 
+        el: bot, 
+        x: startX, 
+        y: startY, 
+        targetX: startX, 
+        targetY: startY, 
+        state: 'idle',
+        speed: 0.15 + (Math.random() * 0.1)
+      });
     }
   });
 }
 
 function updateMesh() {
-  botMap.forEach(bot => {
-    bot.x += bot.vx; bot.y += bot.vy;
-    if (bot.x < 5 || bot.x > 95) bot.vx *= -1;
-    if (bot.y < 10 || bot.y > 90) bot.vy *= -1;
+  const now = Date.now();
+  botMap.forEach((bot, id) => {
+    // 1. Pick new target if idle
+    if (bot.state === 'idle') {
+      if (Math.random() < 0.005) { // Slow chance to move
+        bot.targetX = Math.random() * 80 + 10;
+        bot.targetY = Math.random() * 60 + 20;
+        bot.state = 'walking';
+        bot.el.classList.replace('idle', 'walking');
+      }
+    }
+
+    // 2. Move towards target
+    if (bot.state === 'walking') {
+      const dx = bot.targetX - bot.x;
+      const dy = bot.targetY - bot.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 1) {
+        bot.state = 'idle';
+        bot.el.classList.replace('walking', 'idle');
+      } else {
+        const vx = (dx / dist) * bot.speed;
+        const vy = (dy / dist) * bot.speed;
+        bot.x += vx;
+        bot.y += vy;
+
+        // Flip sprite based on direction
+        const sprite = bot.el.querySelector('.bot-sprite');
+        if (vx > 0) sprite.style.transform = 'scaleX(1)';
+        else if (vx < 0) sprite.style.transform = 'scaleX(-1)';
+      }
+    }
+
     bot.el.style.left = bot.x + '%';
     bot.el.style.top = bot.y + '%';
   });

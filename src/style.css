@@ -220,7 +220,7 @@ body.active-donor .sidebar {
 .neural-mesh {
   flex: 1;
   position: relative;
-  background: rgba(0, 0, 0, 0.4);
+  background: radial-gradient(circle at center, rgba(0, 245, 255, 0.05), transparent 70%);
   border: 1px solid var(--border-glass);
   border-radius: 12px;
   overflow: hidden;
@@ -229,32 +229,8 @@ body.active-donor .sidebar {
   align-content: flex-start;
   padding: 2rem;
   gap: 3rem;
-  perspective: 1000px;
 }
 
-.mesh-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(0deg, transparent 95%, rgba(0, 245, 255, 0.05) 100%);
-  background-size: 100% 4px;
-}
-
-.mesh-scan-line {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--accent-neon);
-  opacity: 0.1;
-  animation: scanline 8s linear infinite;
-}
-
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
-}
-
-/* 👾 Pixel Bots */
 .pixel-bot {
   width: 64px;
   height: 64px;
@@ -263,57 +239,65 @@ body.active-donor .sidebar {
   align-items: center;
   justify-content: center;
   position: absolute;
-  transition: transform 0.2s linear;
-  animation: float 4s ease-in-out infinite;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 10;
 }
 
 .bot-sprite {
-  font-size: 2rem;
-  image-rendering: pixelated;
-  text-shadow: 0 0 15px var(--accent-neon);
+  font-size: 2.2rem;
+  image-rendering: auto;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   position: relative;
+  transition: transform 0.3s;
 }
 
-.bot-sprite::after {
-  content: '';
-  position: absolute;
-  top: 6px; left: 4px;
-  width: 4px; height: 4px;
-  background: black;
-  box-shadow: 12px 0 black;
+/* Walking state animation */
+.pixel-bot.walking .bot-sprite {
+  animation: walking-bob 0.5s infinite ease-in-out;
+}
+
+.pixel-bot.idle .bot-sprite {
+  animation: idling-breath 3s infinite ease-in-out;
+}
+
+@keyframes walking-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-4px) rotate(-5deg); }
+  75% { transform: translateY(-4px) rotate(5deg); }
+}
+
+@keyframes idling-breath {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.05) translateY(-2px); filter: brightness(1.2); }
 }
 
 .bot-tag {
   position: absolute;
-  bottom: -20px;
-  font-size: 0.5rem;
+  bottom: -15px;
+  font-size: 0.55rem;
   color: var(--text-secondary);
   font-family: 'JetBrains Mono';
   white-space: nowrap;
-  background: rgba(0,0,0,0.5);
-  padding: 2px 6px;
+  background: rgba(0,0,0,0.8);
+  padding: 2px 8px;
   border-radius: 4px;
+  border: 1px solid var(--border-glass);
+  pointer-events: none;
 }
 
 .pixel-bot.active .bot-sprite {
-  animation: thinking 0.3s infinite alternate;
-  box-shadow: 0 0 20px var(--accent-neon);
+  filter: drop-shadow(0 0 15px var(--accent-neon));
+  animation: thinking-active 0.4s infinite alternate;
 }
 
-@keyframes thinking {
-  from { transform: scale(1); filter: brightness(1); }
-  to { transform: scale(1.1); filter: brightness(1.5); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+@keyframes thinking-active {
+  from { transform: scale(1.1); }
+  to { transform: scale(1.25); }
 }
 
 .signal-beam {
