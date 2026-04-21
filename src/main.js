@@ -137,9 +137,24 @@ function init() {
 // --- Socket Handlers ---
 socket.on('signal_start', (data) => {
   addSignalCard(data);
-  const bot = document.getElementById(`bot-${data.targetId}`);
-  if (bot) {
-    bot.classList.add('active');
+  const botInfo = botMap.get(data.targetId);
+  if (botInfo) {
+    botInfo.el.classList.add('active');
+    botInfo.activeTask = true;
+    clearBubble(botInfo);
+    
+    // Stop walking and face forward
+    botInfo.state = 'idle';
+    botInfo.el.classList.replace('walking', 'idle');
+    botInfo.targetX = botInfo.x;
+    botInfo.targetY = botInfo.y;
+    botInfo.idleStart = Date.now();
+    
+    const userText = data.request.messages ? data.request.messages[data.request.messages.length - 1].content : 'Processing...';
+    const shortText = userText.length > 20 ? userText.substring(0, 20) + '...' : userText;
+    
+    showBubble(botInfo, `🤔 ${shortText}`);
+
     const beam = document.createElement('div');
     beam.className = 'signal-beam';
     neuralMesh.appendChild(beam);
@@ -149,8 +164,12 @@ socket.on('signal_start', (data) => {
 
 socket.on('signal_complete', (data) => {
   const { targetId } = data;
-  const bot = document.getElementById(`bot-${targetId}`);
-  if (bot) bot.classList.remove('active');
+  const botInfo = botMap.get(targetId);
+  if (botInfo) {
+    botInfo.el.classList.remove('active');
+    botInfo.activeTask = false;
+    showBubble(botInfo, '💡 Done!', 3000);
+  }
 });
 
 socket.on('pool_update', (pool) => {
@@ -295,7 +314,11 @@ function syncMesh(pool) {
       bot.className = 'pixel-bot idle';
       bot.id = `bot-${node.id}`;
       const avatar = avatarPool[Math.abs(node.id.split('').reduce((a,b)=>a+b.charCodeAt(0),0)) % avatarPool.length];
-      bot.innerHTML = `<div class="bot-sprite">${avatar}</div><div class="bot-tag">${node.name}</div>`;
+      bot.innerHTML = `
+        <div class="bot-bubble"></div>
+        <div class="bot-sprite">${avatar}</div>
+        <div class="bot-tag">${node.name}</div>
+      `;
       
       const startX = Math.random() * 80 + 10;
       const startY = Math.random() * 60 + 20;
@@ -310,10 +333,34 @@ function syncMesh(pool) {
         targetX: startX, 
         targetY: startY, 
         state: 'idle',
-        speed: 0.15 + (Math.random() * 0.1)
+        speed: 0.15 + (Math.random() * 0.1),
+        idleTimer: Math.random() * 5000 + 3000,
+        idleStart: Date.now(),
+        moveAxis: 'x',
+        activeTask: false
       });
     }
   });
+}
+
+function showBubble(botInfo, text, duration = 0) {
+  const bubble = botInfo.el.querySelector('.bot-bubble');
+  if (!bubble) return;
+  bubble.innerText = text;
+  bubble.classList.add('show');
+  
+  if (botInfo.bubbleTimeout) clearTimeout(botInfo.bubbleTimeout);
+  
+  if (duration > 0) {
+    botInfo.bubbleTimeout = setTimeout(() => {
+      bubble.classList.remove('show');
+    }, duration);
+  }
+}
+
+function clearBubble(botInfo) {
+  const bubble = botInfo.el.querySelector('.bot-bubble');
+  if (bubble) bubble.classList.remove('show');
 }
 
 function updateMesh() {
@@ -321,33 +368,62 @@ function updateMesh() {
   botMap.forEach((bot, id) => {
     // 1. Pick new target if idle
     if (bot.state === 'idle') {
-      if (Math.random() < 0.005) { // Slow chance to move
+      const idleElapsed = now - (bot.idleStart || now);
+      
+      // show Zzz if idle for a long time
+      if (idleElapsed > 6000 && !bot.hasZzz && !bot.activeTask) {
+         showBubble(bot, '💤');
+         bot.hasZzz = true;
+      }
+
+      if (idleElapsed > bot.idleTimer && !bot.activeTask) {
         bot.targetX = Math.random() * 80 + 10;
         bot.targetY = Math.random() * 60 + 20;
         bot.state = 'walking';
         bot.el.classList.replace('idle', 'walking');
+        bot.hasZzz = false;
+        bot.moveAxis = Math.random() > 0.5 ? 'x' : 'y'; // Pick starting axis for orthogonal movement
+        clearBubble(bot);
       }
     }
 
-    // 2. Move towards target
-    if (bot.state === 'walking') {
+    // 2. Move towards target using Orthogonal Movement
+    if (bot.state === 'walking' && !bot.activeTask) {
       const dx = bot.targetX - bot.x;
       const dy = bot.targetY - bot.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      let vx = 0;
+      let vy = 0;
+      
+      if (bot.moveAxis === 'x') {
+         if (Math.abs(dx) > 0.5) {
+             vx = Math.sign(dx) * bot.speed;
+         } else {
+             bot.moveAxis = 'y'; // switch to Y axis
+         }
+      } else {
+         if (Math.abs(dy) > 0.5) {
+             vy = Math.sign(dy) * bot.speed;
+         } else {
+             if (Math.abs(dx) > 0.5) bot.moveAxis = 'x'; // switch back to X if needed
+         }
+      }
 
-      if (dist < 1) {
+      if (Math.abs(dx) <= 0.5 && Math.abs(dy) <= 0.5) {
         bot.state = 'idle';
         bot.el.classList.replace('walking', 'idle');
+        bot.idleTimer = Math.random() * 5000 + 2000;
+        bot.idleStart = now;
       } else {
-        const vx = (dx / dist) * bot.speed;
-        const vy = (dy / dist) * bot.speed;
         bot.x += vx;
         bot.y += vy;
 
-        // Flip sprite based on direction
-        const sprite = bot.el.querySelector('.bot-sprite');
-        if (vx > 0) sprite.style.transform = 'scaleX(1)';
-        else if (vx < 0) sprite.style.transform = 'scaleX(-1)';
+        // Flip sprite based on X direction
+        if (vx !== 0) {
+          const sprite = bot.el.querySelector('.bot-sprite');
+          if (vx > 0) sprite.style.transform = 'scaleX(1)';
+          else if (vx < 0) sprite.style.transform = 'scaleX(-1)';
+        }
       }
     }
 
