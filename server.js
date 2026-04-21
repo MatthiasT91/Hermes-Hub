@@ -73,7 +73,8 @@ io.on('connection', (socket) => {
 
     // 3. Save Node Identity to disk if new
     if (!existingNode) {
-      state.nodes.push({ id: apiKey, name, approved: false });
+      state.nodes.push({ id: apiKey, name, models: models || [], approved: false });
+      //                        ^^^^^^^^^^^^^^^^^^^^^^^^ ADD THIS
       fs.writeFileSync(DATA_PATH, JSON.stringify(state, null, 2));
     }
 
