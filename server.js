@@ -32,7 +32,17 @@ if (!fs.existsSync(DATA_PATH)) {
 }
 
 function getState() {
-  return JSON.parse(fs.readFileSync(DATA_PATH, 'utf8'));
+  const state = JSON.parse(fs.readFileSync(DATA_PATH, 'utf8'));
+  // Migration: Ensure all existing nodes have an approved status (default true for legacy)
+  let changed = false;
+  state.nodes.forEach(node => {
+    if (node.approved === undefined) {
+      node.approved = true;
+      changed = true;
+    }
+  });
+  if (changed) fs.writeFileSync(DATA_PATH, JSON.stringify(state, null, 2));
+  return state;
 }
 
 // 🌐 WebSockets Model Pool
@@ -274,7 +284,18 @@ const getModelsHandler = (req, res) => {
 };
 
 app.get('/v1/models', getModelsHandler);
+app.get('/v1/modlees', getModelsHandler); // Robust alias for typos
 app.get('/models', getModelsHandler);
+
+// Root /v1 endpoint for discovery
+app.get('/v1', (req, res) => {
+  res.json({
+    status: "active",
+    identity: "Hermes Gateway Hub",
+    version: "2.0.0",
+    capabilities: ["chat_completions", "model_listing", "socket_relay"]
+  });
+});
 
 function getPoolList() {
   const list = [];

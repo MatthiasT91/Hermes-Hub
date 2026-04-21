@@ -43,9 +43,9 @@ const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const chatSendBtn = document.getElementById('chat-send-btn');
 
+// --- Core Initialization ---
 function init() {
   updateOnboardingUI();
-  loadPool();
 
   // Chat Submission
   chatSendBtn.addEventListener('click', () => sendChatMessage());
@@ -56,12 +56,6 @@ function init() {
     }
   });
 
-  // If we already have an Identity, make sure the UI knows
-  if (operatorName && apiKey) {
-    console.log("Operator context restored. Ready to pulse.");
-  }
-
-  // Event Listeners
   // Sidebar Toggles
   const leftSidebar = document.getElementById('left-sidebar');
   const rightSidebar = document.getElementById('right-sidebar');
@@ -83,7 +77,6 @@ function init() {
   zenChatBtn.addEventListener('click', () => {
     app.classList.toggle('zen-mode');
     if (app.classList.contains('zen-mode')) {
-      // Add a way to exit zen mode if we hid the toggles
       const exitBtn = document.createElement('button');
       exitBtn.id = 'exit-zen-btn';
       exitBtn.innerText = 'EXIT ZEN MODE';
@@ -110,9 +103,6 @@ function init() {
     if (name) {
       operatorName = name;
       localStorage.setItem('hermes_operator_name', name);
-      
-      // If we don't have a key, we'll get one on the first pulse or we can simulate it
-      // But for better UX, let's just mark step 1 as complete
       identityModal.classList.remove('active');
       updateOnboardingUI();
     }
@@ -121,12 +111,9 @@ function init() {
   pulseBtn.addEventListener('click', async () => {
     operatorTag.innerText = operatorName.toUpperCase();
     joinResult.style.display = 'none';
-    joinResult.innerText = '';
     joinSubmitBtn.disabled = false;
     joinSubmitBtn.innerText = 'INJECT INTO COLLECTIVE';
     joinModal.classList.add('active');
-    
-    // Auto-scan on modal open
     scanLocalModels();
   });
 
@@ -144,145 +131,61 @@ function init() {
     }
   });
 
-  // Socket Signal Handlers
-  socket.on('signal_start', addSignalCard);
-  socket.on('signal_success', (data) => updateSignalCard(data, 'SUCCESS'));
-  socket.on('signal_error', (data) => updateSignalCard(data, 'ERROR'));
-  // --- Neural Mesh Visualizer (AI Room) ---
-  const neuralMesh = document.getElementById('neural-mesh');
-  const botMap = new Map(); // Keep track of bot elements
-  const avatarPool = ['🐕', '🐈', '🐦', '🦊', '🦉', '🐸', '🐢', '🦖'];
-
-  function spawnBot(nodeId, name) {
-    if (botMap.has(nodeId)) return;
-    
-    const bot = document.createElement('div');
-    bot.className = 'pixel-bot';
-    bot.id = `bot-${nodeId}`;
-    
-    // Pick an avatar based on ID hash
-    const avatarIdx = Math.abs(nodeId.split('').reduce((a,b)=>a+b.charCodeAt(0),0)) % avatarPool.length;
-    const avatar = avatarPool[avatarIdx];
-
-    bot.innerHTML = `
-      <div class="bot-sprite">${avatar}</div>
-      <div class="bot-tag">${name}</div>
-    `;
-    
-    // Random initial position
-    bot.style.left = Math.random() * 80 + 10 + '%';
-    bot.style.top = Math.random() * 60 + 20 + '%';
-    
-    neuralMesh.appendChild(bot);
-    botMap.set(nodeId, {
-      el: bot,
-      x: Math.random() * 80 + 10,
-      y: Math.random() * 60 + 20,
-      vx: (Math.random() - 0.5) * 0.1,
-      vy: (Math.random() - 0.5) * 0.1
-    });
-  }
-
-  function updateMesh() {
-    botMap.forEach((bot, id) => {
-      // 1. Autonomous Movement (Wander)
-      bot.x += bot.vx;
-      bot.y += bot.vy;
-      
-      // 2. Bounce off walls
-      if (bot.x < 5 || bot.x > 95) bot.vx *= -1;
-      if (bot.y < 10 || bot.y > 90) bot.vy *= -1;
-      
-      // 3. Randomize direction slightly
-      if (Math.random() < 0.01) {
-        bot.vx = (Math.random() - 0.5) * 0.1;
-        bot.vy = (Math.random() - 0.5) * 0.1;
-      }
-      
-      bot.el.style.left = `${bot.x}%`;
-      bot.el.style.top = `${bot.y}%`;
-    });
-    
-    requestAnimationFrame(updateMesh);
-  }
-
-  function syncMesh(pool) {
-    const activeIds = new Set(pool.map(n => n.id));
-    
-    // Remove offline bots
-    botMap.forEach((_, id) => {
-      if (!activeIds.has(id)) {
-        const bot = document.getElementById(`bot-${id}`);
-        if (bot) bot.remove();
-        botMap.delete(id);
-      }
-    });
-    
-    // Add new online bots
-    pool.forEach(node => {
-      if (node.status === 'online') {
-        spawnBot(node.id, node.name);
-      }
-    });
-  }
-
-  requestAnimationFrame(updateMesh);
-
-  socket.on('pool_update', (pool) => {
-    renderPool(pool);
-    updateModelSelect(pool);
-    syncMesh(pool); // Sync pixel mesh
-  });
-
-  socket.on('signal_start', (data) => {
-    const { targetId } = data;
-    const bot = document.getElementById(`bot-${targetId}`);
-    if (bot) {
-      bot.classList.add('active');
-      // Create a signal beam effect
-      const beam = document.createElement('div');
-      beam.className = 'signal-beam';
-      neuralMesh.appendChild(beam);
-      setTimeout(() => beam.remove(), 1000);
-    }
-  });
-
-  socket.on('signal_complete', (data) => {
-    const { targetId } = data;
-    const bot = document.getElementById(`bot-${targetId}`);
-    if (bot) {
-      bot.classList.remove('active');
-    }
-  });
-
-  socket.on('registration_success', (data) => {
-    apiKey = data.apiKey;
-    localStorage.setItem('hermes_collective_key', apiKey);
-    
-    joinResult.style.display = 'block';
-    joinResult.style.background = 'rgba(0, 255, 157, 0.1)';
-    joinResult.style.color = 'var(--status-online)';
-    joinResult.innerHTML = `
-      <div style="font-weight: 700; margin-bottom: 0.5rem;">✅ COLLECTIVE LINK SECURED</div>
-      <div style="font-size: 0.6rem; color: var(--text-secondary); margin-bottom: 0.3rem;">OPERATOR API KEY:</div>
-      <div style="background: rgba(0,0,0,0.5); padding: 0.8rem; border-radius: 4px; word-break: break-all; font-size: 0.7rem; color: var(--accent-gold); border: 1px solid var(--border-glass);">
-        ${apiKey}
-      </div>
-      <div style="font-size: 0.55rem; color: var(--text-muted); margin-top: 0.5rem;">Use this key as the Bearer Token in your Hermes/OpenClaw Agent config.</div>
-    `;
-    
-    joinSubmitBtn.innerText = 'LINK SECURED';
-    joinSubmitBtn.style.background = 'var(--status-online)';
-    
-    document.body.classList.add('active-donor');
-    updateOnboardingUI();
-    // Modal stays open so user can copy the key. They can click Cancel/X to close.
-  });
-
-  socket.on('compute_task', handleComputeTask);
+  loadChatHistory();
 }
 
-// === Onboarding logic ===
+// --- Socket Handlers ---
+socket.on('signal_start', (data) => {
+  addSignalCard(data);
+  const bot = document.getElementById(`bot-${data.targetId}`);
+  if (bot) {
+    bot.classList.add('active');
+    const beam = document.createElement('div');
+    beam.className = 'signal-beam';
+    neuralMesh.appendChild(beam);
+    setTimeout(() => beam.remove(), 1000);
+  }
+});
+
+socket.on('signal_complete', (data) => {
+  const { targetId } = data;
+  const bot = document.getElementById(`bot-${targetId}`);
+  if (bot) bot.classList.remove('active');
+});
+
+socket.on('pool_update', (pool) => {
+  renderPool(pool);
+  syncMesh(pool);
+});
+
+socket.on('registration_success', (data) => {
+  apiKey = data.apiKey;
+  localStorage.setItem('hermes_hivemind_key', apiKey);
+  
+  joinResult.style.display = 'block';
+  joinResult.style.background = 'rgba(0, 255, 157, 0.1)';
+  joinResult.style.color = 'var(--status-online)';
+  joinResult.innerHTML = `
+    <div style="font-weight: 700; margin-bottom: 0.5rem;">✅ COLLECTIVE LINK SECURED</div>
+    <div style="font-size: 0.6rem; color: var(--text-secondary); margin-bottom: 0.3rem;">OPERATOR API KEY:</div>
+    <div style="background: rgba(0,0,0,0.5); padding: 0.8rem; border-radius: 4px; word-break: break-all; font-size: 0.7rem; color: var(--accent-gold); border: 1px solid var(--border-glass);">
+      ${apiKey}
+    </div>
+  `;
+  
+  joinSubmitBtn.innerText = 'LINK SECURED';
+  joinSubmitBtn.style.background = 'var(--status-online)';
+  document.body.classList.add('active-donor');
+  updateOnboardingUI();
+});
+
+socket.on('compute_task', handleComputeTask);
+socket.on('stats_update', (data) => {
+  totalSignals = data.total;
+  totalSignalsEl.innerText = totalSignals;
+});
+
+// --- UI Logic ---
 function updateOnboardingUI() {
   if (operatorName) {
     step1Card.classList.add('active');
@@ -300,21 +203,11 @@ function updateOnboardingUI() {
     pulseBtn.disabled = true;
   }
 
-  if (document.body.classList.contains('active-donor')) {
+  if (document.body.classList.contains('active-donor') || apiKey) {
     step3Card.classList.add('active');
     step3Card.style.borderColor = 'var(--status-online)';
     pulseBtn.innerText = 'RESCAN';
     pulseBtn.style.color = 'var(--accent-neon)';
-    // Hide Step 2 when already connected
-    const step2 = step3Card.previousElementSibling;
-    if (step2) step2.style.display = 'none';
-  } else {
-    step3Card.classList.remove('active');
-    step3Card.style.borderColor = 'var(--border-glass)';
-    pulseBtn.innerText = 'CONNECT';
-    pulseBtn.style.color = 'var(--accent-gold)';
-    const step2 = step3Card.previousElementSibling;
-    if (step2) step2.style.display = 'flex';
   }
 }
 
@@ -329,30 +222,27 @@ async function scanLocalModels() {
     if (discoveredModels.length > 0) {
       modelDiscoveryList.innerHTML = `<span style="color:var(--status-online)">FOUND ${discoveredModels.length} MODELS:</span><br>` + discoveredModels.join(', ');
     } else {
-      modelDiscoveryList.innerHTML = `<span style="color:var(--status-offline)">NO MODELS DETECTED</span><br>Start Ollama with OLLAMA_ORIGINS="*"`;
+      modelDiscoveryList.innerHTML = `<span style="color:var(--status-offline)">NO MODELS DETECTED</span>`;
     }
   } catch (e) {
-    modelDiscoveryList.innerHTML = `<span style="color:var(--status-offline)">LOCAL AI NOT REACHABLE</span><br>Ensure Ollama is running on port 11434.`;
-    discoveredModels = [];
+    modelDiscoveryList.innerHTML = `<span style="color:var(--status-offline)">LOCAL AI NOT REACHABLE</span>`;
   }
 }
 
-// === Pool Functions ===
 async function loadPool() {
   try {
     const response = await fetch('/api/pool');
     const pool = await response.json();
     renderPool(pool);
+    syncMesh(pool);
   } catch (e) {
-    console.error('Failed to load pool:', e);
+    console.error('Pool load failed:', e);
   }
 }
 
 function renderPool(pool) {
-  // Update Center Pool
   if (!pool || pool.length === 0) {
-    modelPoolEl.innerHTML = `<div class="empty-state" style="padding: 2rem;">No peers connected.</div>`;
-    nodeListEl.innerHTML = `<div style="font-size: 0.6rem; color: var(--text-muted); padding: 1rem;">No peers online.</div>`;
+    modelPoolEl.innerHTML = `<div class="empty-state">No peers connected.</div>`;
     return;
   }
 
@@ -360,21 +250,13 @@ function renderPool(pool) {
     <div class="pool-node glass-card" style="padding: 1rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
       <div>
         <div style="font-weight: 600; font-size: 0.85rem;">${node.name} ${node.approved ? '' : '(PENDING)'}</div>
-        <div style="font-family: 'JetBrains Mono'; font-size: 0.65rem; color: var(--accent-neon);">${node.models.join(', ') || 'No models'}</div>
+        <div style="font-family: 'JetBrains Mono'; font-size: 0.65rem; color: var(--accent-neon);">${node.models.join(', ')}</div>
       </div>
       <div class="status-dot ${node.status === 'online' ? 'status-online' : 'status-offline'}"></div>
     </div>
   `).join('');
 
-  // Update Sidebar Peer List
-  nodeListEl.innerHTML = pool.map(node => `
-    <div class="node-row">
-      <div class="node-name">${node.name}</div>
-      <div class="status-dot ${node.status === 'online' ? 'status-online' : 'status-offline'}"></div>
-    </div>
-  `).join('');
-
-  // Sync Chat Model Selector
+  // Update Chat Select
   const currentVal = chatModelSelect.value;
   chatModelSelect.innerHTML = '<option value="">Select a Model...</option>';
   const allModels = new Set();
@@ -383,63 +265,137 @@ function renderPool(pool) {
       node.models.forEach(m => allModels.add(m));
     }
   });
-  
-  allModels.forEach(model => {
+  allModels.forEach(m => {
     const opt = document.createElement('option');
-    opt.value = model;
-    opt.innerText = model;
+    opt.value = m; opt.innerText = m;
     chatModelSelect.appendChild(opt);
   });
   if (allModels.has(currentVal)) chatModelSelect.value = currentVal;
 }
 
-// === Signal Functions ===
+// --- Visual Mesh ---
+const neuralMesh = document.getElementById('neural-mesh');
+const botMap = new Map();
+const avatarPool = ['🐕', '🐈', '🐦', '🦊', '🦉', '🐸', '🐢', '🦖'];
+
+function syncMesh(pool) {
+  if (!pool || !neuralMesh) return;
+  const activeIds = new Set(pool.filter(n => n.status === 'online').map(n => n.id));
+  
+  botMap.forEach((_, id) => {
+    if (!activeIds.has(id)) {
+      document.getElementById(`bot-${id}`)?.remove();
+      botMap.delete(id);
+    }
+  });
+
+  pool.forEach(node => {
+    if (node.status === 'online' && !botMap.has(node.id)) {
+      const bot = document.createElement('div');
+      bot.className = 'pixel-bot';
+      bot.id = `bot-${node.id}`;
+      const avatar = avatarPool[Math.abs(node.id.split('').reduce((a,b)=>a+b.charCodeAt(0),0)) % avatarPool.length];
+      bot.innerHTML = `<div class="bot-sprite">${avatar}</div><div class="bot-tag">${node.name}</div>`;
+      bot.style.left = Math.random() * 80 + 10 + '%';
+      bot.style.top = Math.random() * 60 + 20 + '%';
+      neuralMesh.appendChild(bot);
+      botMap.set(node.id, { el: bot, x: parseFloat(bot.style.left), y: parseFloat(bot.style.top), vx: (Math.random()-0.5)*0.05, vy: (Math.random()-0.5)*0.05 });
+    }
+  });
+}
+
+function updateMesh() {
+  botMap.forEach(bot => {
+    bot.x += bot.vx; bot.y += bot.vy;
+    if (bot.x < 5 || bot.x > 95) bot.vx *= -1;
+    if (bot.y < 10 || bot.y > 90) bot.vy *= -1;
+    bot.el.style.left = bot.x + '%';
+    bot.el.style.top = bot.y + '%';
+  });
+  requestAnimationFrame(updateMesh);
+}
+requestAnimationFrame(updateMesh);
+
+// --- Chat Functions ---
+let chatHistory = JSON.parse(localStorage.getItem('hermes_chat_memory')) || [];
+
+function loadChatHistory() {
+  chatHistory.forEach(msg => spawnBubble(msg.role, msg.content, null, false));
+}
+
+async function sendChatMessage() {
+  const model = chatModelSelect.value;
+  const content = chatInput.value.trim();
+  if (!model || !content) return;
+
+  spawnBubble('user', content);
+  chatInput.value = '';
+  const loadingId = 'loading-' + Date.now();
+  spawnBubble('ai', '...', loadingId);
+
+  try {
+    const response = await fetch('/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey || 'public_tester'}` },
+      body: JSON.stringify({ model, messages: [{ role: 'user', content }] })
+    });
+    const data = await response.json();
+    const loadingEl = document.getElementById(loadingId);
+    if (data.error) {
+      loadingEl.innerText = `Error: ${data.error.message}`;
+    } else {
+      const aiText = data.choices[0].message.content;
+      loadingEl.innerText = aiText;
+      chatHistory.push({ role: 'ai', content: aiText });
+      localStorage.setItem('hermes_chat_memory', JSON.stringify(chatHistory));
+    }
+  } catch (e) {
+    document.getElementById(loadingId).innerText = `Failed: ${e.message}`;
+  }
+}
+
+function spawnBubble(role, text, id = null, save = true) {
+  const placeholder = chatMessages.querySelector('.chat-placeholder');
+  if (placeholder) placeholder.remove();
+  const bubble = document.createElement('div');
+  bubble.className = `chat-bubble ${role}`;
+  if (id) bubble.id = id;
+  bubble.innerText = text;
+  chatMessages.appendChild(bubble);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  if (save && role === 'user') {
+    chatHistory.push({ role, content: text });
+    localStorage.setItem('hermes_chat_memory', JSON.stringify(chatHistory));
+  }
+}
+
 function addSignalCard(data) {
-  const empty = signalStream.querySelector('.empty-state');
-  if (empty) empty.remove();
-
   const card = document.createElement('div');
-  card.id = `signal-${data.id}`;
   card.className = 'signal-card glass-card';
-
-  const userText = data.request.messages ? data.request.messages[data.request.messages.length - 1].content : 'Binary Stream';
-
+  card.id = `signal-${data.id}`;
+  const userText = data.request.messages ? data.request.messages[data.request.messages.length - 1].content : 'Signal';
   card.innerHTML = `
-    <div class="signal-meta">
-       <span>ID: ${data.id}</span>
-       <span>SOURCE: AGENT</span>
-       <span>TIME: ${new Date().toLocaleTimeString()}</span>
-    </div>
-    <div style="font-size: 0.85rem; margin-bottom: 1rem; color: var(--accent-gold);">"${userText}"</div>
-    <div class="data-grid">
-       <div class="pane"><label>REQUEST</label><pre>${JSON.stringify(data.request, null, 1).substring(0, 100)}...</pre></div>
-       <div class="pane" id="res-pane-${data.id}"><label>RESPONSE</label><pre style="color: var(--text-muted);">awaiting signal...</pre></div>
-    </div>
+    <div class="signal-meta"><span>ID: ${data.id.substring(0,8)}</span><span>${new Date().toLocaleTimeString()}</span></div>
+    <div style="font-size: 0.8rem; color: var(--accent-gold);">"${userText.substring(0,50)}..."</div>
+    <div id="res-pane-${data.id}" style="font-size: 0.7rem; color: var(--text-muted);">processing...</div>
   `;
   signalStream.prepend(card);
-  totalSignals++;
-  totalSignalsEl.innerText = totalSignals;
 }
 
 function updateSignalCard(data, status) {
   const pane = document.getElementById(`res-pane-${data.id}`);
   if (!pane) return;
-
   if (status === 'SUCCESS') {
-    const text = data.response.choices ? data.response.choices[0].message.content : 'Signal Received';
-    pane.innerHTML = `<label>COMPLETE (${data.latency}ms)</label><pre>${text.substring(0, 300)}...</pre>`;
+    pane.innerText = 'COMPLETE';
+    pane.style.color = 'var(--status-online)';
   } else {
-    pane.innerHTML = `<label style="color: red;">DROPPED</label><pre style="color: red;">${data.error}</pre>`;
+    pane.innerText = 'FAILED';
+    pane.style.color = 'var(--status-offline)';
   }
 }
 
 async function handleComputeTask(data) {
   const { taskId, request } = data;
-  const uiIndicator = document.createElement('div');
-  uiIndicator.className = 'processing-task-indicator glass';
-  uiIndicator.innerHTML = `<span>⚡</span> Processing Network Task...`;
-  document.body.appendChild(uiIndicator);
-
   try {
     const response = await fetch('http://127.0.0.1:11434/v1/chat/completions', {
       method: 'POST',
@@ -450,93 +406,9 @@ async function handleComputeTask(data) {
     socket.emit('task_result', { taskId, response: responseData });
   } catch (error) {
     socket.emit('task_result', { taskId, error: error.message });
-  } finally {
-    setTimeout(() => uiIndicator.remove(), 1000);
   }
 }
 
+// Start
 init();
-
-// === Chat Functions ===
-let chatHistory = JSON.parse(localStorage.getItem('hermes_chat_memory')) || [];
-
-function loadChatHistory() {
-  if (chatHistory.length > 0) {
-    const placeholder = chatMessages.querySelector('.chat-placeholder');
-    if (placeholder) placeholder.remove();
-    chatHistory.forEach(msg => {
-      spawnBubble(msg.role, msg.content, null, false);
-    });
-  }
-}
-
-async function sendChatMessage() {
-  const model = chatModelSelect.value;
-  const content = chatInput.value.trim();
-  if (!model || !content) return;
-
-  // Add User Bubble
-  spawnBubble('user', content);
-  chatInput.value = '';
-
-  // Add Loading Bubble
-  const loadingId = 'loading-' + Date.now();
-  spawnBubble('ai', '...', loadingId);
-
-  try {
-    const response = await fetch('/v1/chat/completions', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey || 'public_tester'}`
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [{ role: 'user', content: content }]
-      })
-    });
-
-    const data = await response.json();
-    const loadingEl = document.getElementById(loadingId);
-    
-    if (data.error) {
-      loadingEl.innerText = `Error: ${data.error.message}`;
-      loadingEl.style.color = 'var(--status-offline)';
-    } else {
-      const aiText = data.choices[0].message.content;
-      loadingEl.innerText = aiText;
-      // Save AI response to history
-      chatHistory.push({ role: 'ai', content: aiText });
-      localStorage.setItem('hermes_chat_memory', JSON.stringify(chatHistory));
-    }
-  } catch (e) {
-    const loadingEl = document.getElementById(loadingId);
-    loadingEl.innerText = `Transmission Failed: ${e.message}`;
-  }
-}
-
-function spawnBubble(role, text, id = null, save = true) {
-  const placeholder = chatMessages.querySelector('.chat-placeholder');
-  if (placeholder) placeholder.remove();
-
-  const bubble = document.createElement('div');
-  bubble.className = `chat-bubble ${role}`;
-  if (id) bubble.id = id;
-  bubble.innerText = text;
-  chatMessages.appendChild(bubble);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-
-  if (save && role === 'user') {
-    chatHistory.push({ role, content: text });
-    localStorage.setItem('hermes_chat_memory', JSON.stringify(chatHistory));
-  }
-}
-
-// Add stats sync
-socket.on('stats_update', (data) => {
-  totalSignals = data.total;
-  totalSignalsEl.innerText = totalSignals;
-});
-
-// Call on init
-loadChatHistory();
+loadPool();
