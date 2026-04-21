@@ -256,26 +256,27 @@ body.active-donor .sidebar {
 
 /* 👾 Pixel Bots */
 .pixel-bot {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
-  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: absolute;
+  transition: transform 0.2s linear;
   animation: float 4s ease-in-out infinite;
+  z-index: 10;
 }
 
 .bot-sprite {
-  width: 24px;
-  height: 24px;
+  font-size: 2rem;
   image-rendering: pixelated;
-  background: var(--accent-neon);
-  box-shadow: 
-    0 4px var(--accent-neon), 4px 0 var(--accent-neon), -4px 0 var(--accent-neon),
-    0 -4px var(--accent-neon), 4px 4px var(--accent-neon), -4px -4px var(--accent-neon);
-  border-radius: 2px;
+  text-shadow: 0 0 15px var(--accent-neon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
   position: relative;
 }
 
