@@ -241,32 +241,56 @@ const getModelsHandler = (req, res) => {
   const allModels = [];
   const now = Math.floor(Date.now() / 1000);
 
+  const addedModels = new Set();
+  
+  // 1. Add Dynamic WebSocket Pool Models
   for (const [key, node] of modelPool) {
     if (node.approved && node.status === 'online') {
       for (const model of node.models) {
-        allModels.push({
-          id: model,
-          object: 'model',
-          created: now,
-          owned_by: node.name,
-          status: 'online',
-          permission: [{
-            id: "modelperm-" + uuidv4().substr(0,8),
-            object: "model_permission",
-            created: now,
-            allow_create_engine: false,
-            allow_sampling: true,
-            allow_logprobs: true,
-            allow_search_indices: false,
-            allow_view: true,
-            allow_fine_tuning: false,
-            organization: "*",
-            group: null,
-            is_blocking: false
-          }]
-        });
+        if (!addedModels.has(model)) {
+          addedModels.add(model);
+          allModels.push(createModelObject(model, node.name, now));
+        }
       }
     }
+  }
+
+  // 2. Add Static Fallback/Hub Nodes from Disk
+  const state = getState();
+  for (const node of state.nodes) {
+    if (node.approved !== false && node.status !== 'offline') {
+      const models = node.models || (node.model ? [node.model] : []);
+      for (const model of models) {
+        if (!addedModels.has(model)) {
+          addedModels.add(model);
+          allModels.push(createModelObject(model, node.name || 'Hermes Static Node', now));
+        }
+      }
+    }
+  }
+
+  function createModelObject(modelId, ownerName, timestamp) {
+    return {
+      id: modelId,
+      object: 'model',
+      created: timestamp,
+      owned_by: ownerName,
+      status: 'online',
+      permission: [{
+        id: "modelperm-" + uuidv4().substr(0,8),
+        object: "model_permission",
+        created: timestamp,
+        allow_create_engine: false,
+        allow_sampling: true,
+        allow_logprobs: true,
+        allow_search_indices: false,
+        allow_view: true,
+        allow_fine_tuning: false,
+        organization: "*",
+        group: null,
+        is_blocking: false
+      }]
+    };
   }
 
   if (allModels.length === 0) {
