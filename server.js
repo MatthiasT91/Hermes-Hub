@@ -55,11 +55,11 @@ io.on('connection', (socket) => {
   socket.on('register_browser_node', (data) => {
     const { ownerKey, name, models } = data;
     const apiKey = ownerKey || uuidv4();
-    
+
     // 1. Get or create node from persistent state
     const state = getState();
     const existingNode = state.nodes.find(n => n.id === apiKey);
-    
+
     // 2. Update In-Memory Pool
     modelPool.set(apiKey, {
       name: name || 'Anonymous Network Node',
@@ -134,7 +134,7 @@ app.post('/v1/chat/completions', async (req, res) => {
     if (node.approved && node.status !== 'offline' && node.models.includes(requestedModel)) {
       targetNode = node;
       targetNodeKey = key;
-      break; 
+      break;
     }
   }
 
@@ -144,7 +144,7 @@ app.post('/v1/chat/completions', async (req, res) => {
 
   // 3. Apply Idle Logic & Priority Architecture
   const isOwnerRequesting = rawToken === targetNodeKey;
-  
+
   if (isOwnerRequesting) {
     // Owner is using their own brain. Mark as actively in-use to lock out borrowers.
     targetNode.lastUsedByOwner = Date.now();
@@ -152,23 +152,23 @@ app.post('/v1/chat/completions', async (req, res) => {
     // Borrower is trying to use a brain. Check the 5-Minute Idle Lock.
     const idleTimeMillis = Date.now() - (targetNode.lastUsedByOwner || 0);
     const idleLockMillis = 5 * 60 * 1000; // 5 minutes
-    
+
     if (idleTimeMillis < idleLockMillis) {
       const remainingSeconds = Math.ceil((idleLockMillis - idleTimeMillis) / 1000);
-      return res.status(423).json({ 
-        error: { 
-          message: `Access Denied: Owner is currently using this brain. Please try again after a 5-minute idle period. (Locked for ${remainingSeconds}s)` 
-        } 
+      return res.status(423).json({
+        error: {
+          message: `Access Denied: Owner is currently using this brain. Please try again after a 5-minute idle period. (Locked for ${remainingSeconds}s)`
+        }
       });
     }
   }
 
   // 4. Proceed with WebSockets Compute Relay
   const taskId = uuidv4();
-  
+
   // 7. Relay task to browser via socket (Using ID from pool for UI tracking)
-  io.emit('signal_start', { 
-    id: taskId, 
+  io.emit('signal_start', {
+    id: taskId,
     targetId: targetNodeKey,
     nodeName: targetNode.name,
     request: req.body
@@ -176,7 +176,7 @@ app.post('/v1/chat/completions', async (req, res) => {
 
   try {
     const startTime = Date.now();
-    
+
     // Create the Promise to wait for the browser to run the model
     const taskPromise = new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -242,7 +242,7 @@ const getModelsHandler = (req, res) => {
   const now = Math.floor(Date.now() / 1000);
 
   const addedModels = new Set();
-  
+
   // 1. Add Dynamic WebSocket Pool Models
   for (const [key, node] of modelPool) {
     if (node.approved && node.status === 'online') {
@@ -345,9 +345,9 @@ app.post('/api/admin/approve', requireAdmin, (req, res) => {
   const { id } = req.body;
   const node = modelPool.get(id);
   if (!node) return res.status(404).json({ error: 'Node not found.' });
-  
+
   node.approved = true;
-  
+
   // Persist to Disk
   const state = getState();
   const diskNode = state.nodes.find(n => n.id === id);
