@@ -259,24 +259,66 @@ app.get('/api/pool', (req, res) => {
 // OpenAI-compatible /v1/models endpoint
 const getModelsHandler = (req, res) => {
   try {
-    const state = getState(); // Read current state
+    const state = getState();
     const allModels = [];
+    const seenIds = new Set();
+    const now = Math.floor(Date.now() / 1000);
 
+    // 1. Read in-memory pool (online nodes)
+    for (const [key, node] of modelPool) {
+      const models = node.models || (node.model ? [node.model] : []);
+      if (models && node.approved && node.status !== 'offline') {
+        models.forEach(model => {
+          let modelId = model;
+          if (typeof model === 'object' && model !== null) {
+            modelId = model.id || model.name;
+            models.forEach(m => {
+              if (m.id !== undefined) seenIds.add(m.id);
+            });
+          }
+          if (modelId && !seenIds.has(modelId)) {
+            seenIds.add(modelId);
+            allModels.push({
+              id: modelId,
+              object: "model",
+              created: now,
+              owned_by: "user"
+            });
+          }
+        });
+      }
+    }
+
+    // 2. Read disk state for offline/pending nodes
     if (state.nodes && Array.isArray(state.nodes)) {
       state.nodes.forEach(node => {
-        // Check if the node has models registered
-        if (node.models && node.models.length > 0) {
-          node.models.forEach(model => {
-            // Avoid duplicates (e.g. if multiple nodes offer the same model)
-            if (!allModels.find(m => m.id === model.id)) {
+        const models = node.models || (node.model ? [node.model] : []);
+        if (models && node.approved !== false) {
+          models.forEach(model => {
+            let modelId = model;
+            if (typeof model === 'object') {
+              modelId = model.id || model.name;
+            }
+            if (modelId && !seenIds.has(modelId)) {
+              seenIds.add(modelId);
               allModels.push({
-                id: model.id,
-                name: model.name || model.id,
-                object: "model"
+                id: modelId,
+                object: "model",
+                created: now,
+                owned_by: "user"
               });
             }
           });
         }
+      });
+    }
+
+    if (allModels.length === 0) {
+      allModels.push({
+        id: "hermes-collective-awaiting-peers",
+        object: "model",
+        created: now,
+        owned_by: "system"
       });
     }
 
@@ -289,7 +331,7 @@ const getModelsHandler = (req, res) => {
 };
 
 app.get('/v1/models', getModelsHandler);
-app.get('/v1/modlees', getModelsHandler); // Robust alias for typos
+app.get('/v1/modlees', getModelsHandler);
 app.get('/models', getModelsHandler);
 
 // Root /v1 endpoint for discovery
