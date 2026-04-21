@@ -735,48 +735,35 @@ pre {
 }
 
 .processing-task-indicator {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  padding: 1rem 2rem;
-  border-radius: 50px;
-  background: rgba(0, 245, 255, 0.1);
-  border: 1px solid var(--accent-neon);
-  color: var(--accent-neon);
-  font-weight: 600;
+  margin: 10px 0;
+  padding: 8px 12px;
+  background: rgba(0, 245, 255, 0.05);
+  border: 1px solid rgba(0, 245, 255, 0.2);
+  border-radius: 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 8px;
   animation: pulse-glow-task 2s infinite;
-  z-index: 1000;
-  pointer-events: none;
 }
 
-.processing-task-indicator span {
-  animation: spin 3s linear infinite;
-  display: inline-block;
+.indicator-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  color: var(--accent-neon);
+  font-weight: 700;
 }
 
 @keyframes pulse-glow-task {
-  0% {
-    box-shadow: 0 0 10px rgba(0, 245, 255, 0.2);
-  }
-
-  50% {
-    box-shadow: 0 0 30px rgba(0, 245, 255, 0.6);
-  }
-
-  100% {
-    box-shadow: 0 0 10px rgba(0, 245, 255, 0.2);
-  }
+  0% { box-shadow: 0 0 10px rgba(0, 245, 255, 0.1); }
+  50% { box-shadow: 0 0 20px rgba(0, 245, 255, 0.3); }
+  100% { box-shadow: 0 0 10px rgba(0, 245, 255, 0.1); }
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
