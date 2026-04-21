@@ -458,18 +458,30 @@ async function handleComputeTask(data) {
 init();
 
 // === Chat Functions ===
+let chatHistory = JSON.parse(localStorage.getItem('hermes_chat_memory')) || [];
+
+function loadChatHistory() {
+  if (chatHistory.length > 0) {
+    const placeholder = chatMessages.querySelector('.chat-placeholder');
+    if (placeholder) placeholder.remove();
+    chatHistory.forEach(msg => {
+      spawnBubble(msg.role, msg.content, null, false);
+    });
+  }
+}
+
 async function sendChatMessage() {
   const model = chatModelSelect.value;
   const content = chatInput.value.trim();
   if (!model || !content) return;
 
   // Add User Bubble
-  appendBubble('user', content);
+  spawnBubble('user', content);
   chatInput.value = '';
 
   // Add Loading Bubble
   const loadingId = 'loading-' + Date.now();
-  appendBubble('ai', '...', loadingId);
+  spawnBubble('ai', '...', loadingId);
 
   try {
     const response = await fetch('/v1/chat/completions', {
@@ -491,7 +503,11 @@ async function sendChatMessage() {
       loadingEl.innerText = `Error: ${data.error.message}`;
       loadingEl.style.color = 'var(--status-offline)';
     } else {
-      loadingEl.innerText = data.choices[0].message.content;
+      const aiText = data.choices[0].message.content;
+      loadingEl.innerText = aiText;
+      // Save AI response to history
+      chatHistory.push({ role: 'ai', content: aiText });
+      localStorage.setItem('hermes_chat_memory', JSON.stringify(chatHistory));
     }
   } catch (e) {
     const loadingEl = document.getElementById(loadingId);
@@ -499,7 +515,7 @@ async function sendChatMessage() {
   }
 }
 
-function appendBubble(role, text, id = null) {
+function spawnBubble(role, text, id = null, save = true) {
   const placeholder = chatMessages.querySelector('.chat-placeholder');
   if (placeholder) placeholder.remove();
 
@@ -509,4 +525,18 @@ function appendBubble(role, text, id = null) {
   bubble.innerText = text;
   chatMessages.appendChild(bubble);
   chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  if (save && role === 'user') {
+    chatHistory.push({ role, content: text });
+    localStorage.setItem('hermes_chat_memory', JSON.stringify(chatHistory));
+  }
 }
+
+// Add stats sync
+socket.on('stats_update', (data) => {
+  totalSignals = data.total;
+  totalSignalsEl.innerText = totalSignals;
+});
+
+// Call on init
+loadChatHistory();
