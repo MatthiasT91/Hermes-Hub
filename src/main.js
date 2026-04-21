@@ -123,10 +123,10 @@ function init() {
     if (discoveredModels.length > 0) {
       joinSubmitBtn.innerText = 'ESTABLISHING LINK...';
       joinSubmitBtn.disabled = true;
-      socket.emit('register_browser_node', { 
-        name: operatorName, 
-        models: discoveredModels, 
-        ownerKey: apiKey 
+      socket.emit('register_browser_node', {
+        name: operatorName,
+        models: discoveredModels,
+        ownerKey: apiKey
       });
     }
   });
@@ -142,17 +142,17 @@ socket.on('signal_start', (data) => {
     botInfo.el.classList.add('active');
     botInfo.activeTask = true;
     clearBubble(botInfo);
-    
+
     // Stop walking and face forward
     botInfo.state = 'idle';
     botInfo.el.classList.replace('walking', 'idle');
     botInfo.targetX = botInfo.x;
     botInfo.targetY = botInfo.y;
     botInfo.idleStart = Date.now();
-    
+
     const userText = data.request.messages ? data.request.messages[data.request.messages.length - 1].content : 'Processing...';
     const shortText = userText.length > 20 ? userText.substring(0, 20) + '...' : userText;
-    
+
     showBubble(botInfo, `🤔 ${shortText}`);
 
     const beam = document.createElement('div');
@@ -180,7 +180,7 @@ socket.on('pool_update', (pool) => {
 socket.on('registration_success', (data) => {
   apiKey = data.apiKey;
   localStorage.setItem('hermes_hivemind_key', apiKey);
-  
+
   joinResult.style.display = 'block';
   joinResult.style.background = 'rgba(0, 255, 157, 0.1)';
   joinResult.style.color = 'var(--status-online)';
@@ -191,7 +191,7 @@ socket.on('registration_success', (data) => {
       ${apiKey}
     </div>
   `;
-  
+
   joinSubmitBtn.innerText = 'LINK SECURED';
   joinSubmitBtn.style.background = 'var(--status-online)';
   document.body.classList.add('active-donor');
@@ -237,7 +237,7 @@ async function scanLocalModels() {
     const response = await fetch('http://127.0.0.1:11434/api/tags');
     const data = await response.json();
     discoveredModels = data.models ? data.models.map(m => m.name || m.id) : [];
-    
+
     if (discoveredModels.length > 0) {
       modelDiscoveryList.innerHTML = `<span style="color:var(--status-online)">FOUND ${discoveredModels.length} MODELS:</span><br>` + discoveredModels.join(', ');
     } else {
@@ -297,10 +297,50 @@ const neuralMesh = document.getElementById('neural-mesh');
 const botMap = new Map();
 const avatarPool = ['🐕', '🐈', '🐦', '🦊', '🦉', '🐸', '🐢', '🦖'];
 
+// Virtual Office Layout
+const workstations = [
+  { x: 30, y: 35, inUse: null, type: 'computer' },
+  { x: 50, y: 35, inUse: null, type: 'computer' },
+  { x: 70, y: 35, inUse: null, type: 'computer' },
+  { x: 40, y: 70, inUse: null, type: 'server' },
+  { x: 60, y: 70, inUse: null, type: 'server' }
+];
+
+let workstationsInitialized = false;
+
+function initWorkstations() {
+  if (!neuralMesh || workstationsInitialized) return;
+  workstations.forEach(ws => {
+    const el = document.createElement('div');
+    el.className = 'workstation';
+    el.innerHTML = ws.type === 'computer' ? '💻' : '🗄️';
+    el.style.left = ws.x + '%';
+    el.style.top = ws.y + '%';
+    neuralMesh.appendChild(el);
+  });
+  workstationsInitialized = true;
+}
+
+function assignWorkstation(botId) {
+  const available = workstations.filter(ws => !ws.inUse);
+  if (available.length > 0) {
+    const ws = available[Math.floor(Math.random() * available.length)];
+    ws.inUse = botId;
+    return ws;
+  }
+  return null;
+}
+
+function freeWorkstation(botId) {
+  const ws = workstations.find(ws => ws.inUse === botId);
+  if (ws) ws.inUse = null;
+}
+
 function syncMesh(pool) {
   if (!pool || !neuralMesh) return;
+  initWorkstations();
   const activeIds = new Set(pool.filter(n => n.status === 'online').map(n => n.id));
-  
+
   botMap.forEach((_, id) => {
     if (!activeIds.has(id)) {
       document.getElementById(`bot-${id}`)?.remove();
@@ -313,25 +353,25 @@ function syncMesh(pool) {
       const bot = document.createElement('div');
       bot.className = 'pixel-bot idle';
       bot.id = `bot-${node.id}`;
-      const avatar = avatarPool[Math.abs(node.id.split('').reduce((a,b)=>a+b.charCodeAt(0),0)) % avatarPool.length];
+      const avatar = avatarPool[Math.abs(node.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % avatarPool.length];
       bot.innerHTML = `
         <div class="bot-bubble"></div>
         <div class="bot-sprite">${avatar}</div>
         <div class="bot-tag">${node.name}</div>
       `;
-      
+
       const startX = Math.random() * 80 + 10;
       const startY = Math.random() * 60 + 20;
       bot.style.left = startX + '%';
       bot.style.top = startY + '%';
       neuralMesh.appendChild(bot);
-      
-      botMap.set(node.id, { 
-        el: bot, 
-        x: startX, 
-        y: startY, 
-        targetX: startX, 
-        targetY: startY, 
+
+      botMap.set(node.id, {
+        el: bot,
+        x: startX,
+        y: startY,
+        targetX: startX,
+        targetY: startY,
         state: 'idle',
         speed: 0.15 + (Math.random() * 0.1),
         idleTimer: Math.random() * 5000 + 3000,
@@ -348,9 +388,9 @@ function showBubble(botInfo, text, duration = 0) {
   if (!bubble) return;
   bubble.innerText = text;
   bubble.classList.add('show');
-  
+
   if (botInfo.bubbleTimeout) clearTimeout(botInfo.bubbleTimeout);
-  
+
   if (duration > 0) {
     botInfo.bubbleTimeout = setTimeout(() => {
       bubble.classList.remove('show');
@@ -369,11 +409,11 @@ function updateMesh() {
     // 1. Pick new target if idle
     if (bot.state === 'idle') {
       const idleElapsed = now - (bot.idleStart || now);
-      
+
       // show Zzz if idle for a long time
       if (idleElapsed > 6000 && !bot.hasZzz && !bot.activeTask) {
-         showBubble(bot, '💤');
-         bot.hasZzz = true;
+        showBubble(bot, '💤');
+        bot.hasZzz = true;
       }
 
       if (idleElapsed > bot.idleTimer && !bot.activeTask) {
@@ -391,22 +431,22 @@ function updateMesh() {
     if (bot.state === 'walking' && !bot.activeTask) {
       const dx = bot.targetX - bot.x;
       const dy = bot.targetY - bot.y;
-      
+
       let vx = 0;
       let vy = 0;
-      
+
       if (bot.moveAxis === 'x') {
-         if (Math.abs(dx) > 0.5) {
-             vx = Math.sign(dx) * bot.speed;
-         } else {
-             bot.moveAxis = 'y'; // switch to Y axis
-         }
+        if (Math.abs(dx) > 0.5) {
+          vx = Math.sign(dx) * bot.speed;
+        } else {
+          bot.moveAxis = 'y'; // switch to Y axis
+        }
       } else {
-         if (Math.abs(dy) > 0.5) {
-             vy = Math.sign(dy) * bot.speed;
-         } else {
-             if (Math.abs(dx) > 0.5) bot.moveAxis = 'x'; // switch back to X if needed
-         }
+        if (Math.abs(dy) > 0.5) {
+          vy = Math.sign(dy) * bot.speed;
+        } else {
+          if (Math.abs(dx) > 0.5) bot.moveAxis = 'x'; // switch back to X if needed
+        }
       }
 
       if (Math.abs(dx) <= 0.5 && Math.abs(dy) <= 0.5) {
@@ -493,8 +533,8 @@ function addSignalCard(data) {
   card.id = `signal-${data.id}`;
   const userText = data.request.messages ? data.request.messages[data.request.messages.length - 1].content : 'Signal';
   card.innerHTML = `
-    <div class="signal-meta"><span>ID: ${data.id.substring(0,8)}</span><span>${new Date().toLocaleTimeString()}</span></div>
-    <div style="font-size: 0.8rem; color: var(--accent-gold);">"${userText.substring(0,50)}..."</div>
+    <div class="signal-meta"><span>ID: ${data.id.substring(0, 8)}</span><span>${new Date().toLocaleTimeString()}</span></div>
+    <div style="font-size: 0.8rem; color: var(--accent-gold);">"${userText.substring(0, 50)}..."</div>
     <div id="res-pane-${data.id}" style="font-size: 0.7rem; color: var(--text-muted);">processing...</div>
   `;
   signalStream.prepend(card);

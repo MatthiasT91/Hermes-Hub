@@ -246,7 +246,7 @@ body.active-donor .sidebar {
 .bot-sprite {
   font-size: 2.2rem;
   image-rendering: auto;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -266,14 +266,33 @@ body.active-donor .sidebar {
 }
 
 @keyframes walking-bob {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-4px) rotate(-5deg); }
-  75% { transform: translateY(-4px) rotate(5deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  25% {
+    transform: translateY(-4px) rotate(-5deg);
+  }
+
+  75% {
+    transform: translateY(-4px) rotate(5deg);
+  }
 }
 
 @keyframes idling-breath {
-  0%, 100% { transform: scale(1); filter: brightness(1); }
-  50% { transform: scale(1.05) translateY(-2px); filter: brightness(1.2); }
+
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.05) translateY(-2px);
+    filter: brightness(1.2);
+  }
 }
 
 .bot-tag {
@@ -283,7 +302,7 @@ body.active-donor .sidebar {
   color: var(--text-secondary);
   font-family: 'JetBrains Mono';
   white-space: nowrap;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0, 0, 0, 0.8);
   padding: 2px 8px;
   border-radius: 4px;
   border: 1px solid var(--border-glass);
@@ -301,7 +320,7 @@ body.active-donor .sidebar {
   font-family: 'Outfit', sans-serif;
   font-weight: bold;
   white-space: nowrap;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
   opacity: 0;
   transform: translateY(10px) scale(0.8);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -331,8 +350,13 @@ body.active-donor .sidebar {
 }
 
 @keyframes thinking-active {
-  from { transform: scale(1.1); }
-  to { transform: scale(1.25); }
+  from {
+    transform: scale(1.1);
+  }
+
+  to {
+    transform: scale(1.25);
+  }
 }
 
 .signal-beam {
@@ -503,16 +527,27 @@ pre {
   width: 380px;
   border-left: 1px solid var(--border-glass);
 }
+
 .left-sidebar {
   width: 300px;
 }
+
 .sidebar {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
   overflow: hidden;
 }
 
-.left-sidebar.collapsed { width: 0 !important; padding: 0 !important; border: none !important; }
-.right-sidebar.collapsed { width: 0 !important; padding: 0 !important; border: none !important; }
+.left-sidebar.collapsed {
+  width: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.right-sidebar.collapsed {
+  width: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
 
 .sidebar-toggle {
   position: fixed;
@@ -528,22 +563,31 @@ pre {
   transition: all 0.2s;
 }
 
-.sidebar-toggle:hover { background: rgba(0, 245, 255, 0.1); color: white; }
-.sidebar-toggle.left { left: 0; }
-.sidebar-toggle.right { 
-  right: 0; 
+.sidebar-toggle:hover {
+  background: rgba(0, 245, 255, 0.1);
+  color: white;
+}
+
+.sidebar-toggle.left {
+  left: 0;
+}
+
+.sidebar-toggle.right {
+  right: 0;
   border-radius: 8px 0 0 8px;
   color: var(--accent-purple);
 }
 
-.left-sidebar.collapsed + .sidebar-toggle.left { left: 0; }
+.left-sidebar.collapsed+.sidebar-toggle.left {
+  left: 0;
+}
 
 /* Zen Mode (Full Screen Chat) */
 .main-dashboard {
   transition: flex 0.3s ease, width 0.3s ease;
 }
 
-#app.zen-mode .left-sidebar, 
+#app.zen-mode .left-sidebar,
 #app.zen-mode .main-dashboard {
   width: 0 !important;
   flex: 0 !important;
@@ -560,7 +604,9 @@ pre {
   display: none;
 }
 
-#app.zen-mode .sidebar-toggle { background: var(--bg-deep); }
+#app.zen-mode .sidebar-toggle {
+  background: var(--bg-deep);
+}
 
 .chat-container {
   display: flex;
@@ -777,12 +823,25 @@ pre {
 }
 
 @keyframes pulse-glow-task {
-  0% { box-shadow: 0 0 10px rgba(0, 245, 255, 0.1); }
-  50% { box-shadow: 0 0 20px rgba(0, 245, 255, 0.3); }
-  100% { box-shadow: 0 0 10px rgba(0, 245, 255, 0.1); }
+  0% {
+    box-shadow: 0 0 10px rgba(0, 245, 255, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+  }
+
+  100% {
+    box-shadow: 0 0 10px rgba(0, 245, 255, 0.1);
+  }
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
