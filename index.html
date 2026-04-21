@@ -130,6 +130,15 @@
           <div class="chat-placeholder">Choose a model and start a transmission...</div>
         </div>
 
+        <!-- Processing Indicator (Moved here for clean layout) -->
+        <div id="task-indicator" class="processing-task-indicator" style="display: none;">
+          <div class="indicator-glow"></div>
+          <div class="indicator-content">
+            <span class="lightning">⚡</span>
+            <span class="text">Collective Processing...</span>
+          </div>
+        </div>
+
         <div class="chat-input-wrapper">
           <textarea id="chat-input" placeholder="Enter signal prompt..." rows="3"></textarea>
           <button id="chat-send-btn">TRANSMIT</button>
