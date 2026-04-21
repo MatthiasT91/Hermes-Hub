@@ -186,6 +186,7 @@ app.post('/v1/chat/completions', async (req, res) => {
     totalSignalsProcessed++;
 
     io.emit('signal_complete', { id: taskId, targetId: targetNodeKey });
+    io.emit('stats_update', { total: totalSignalsProcessed });
 
     // 8. Log anonymously for Admin Dashboard
     io.emit('signal_intercept', {
