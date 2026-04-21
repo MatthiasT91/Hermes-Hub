@@ -274,7 +274,7 @@ const getModelsHandler = (req, res) => {
       id: modelId,
       object: 'model',
       created: timestamp,
-      owned_by: ownerName
+      owned_by: 'system'
     };
   }
 
