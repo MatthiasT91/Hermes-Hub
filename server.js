@@ -58,29 +58,47 @@ io.on('connection', (socket) => {
 
     // 1. Get or create node from persistent state
     const state = getState();
-    const existingNode = state.nodes.find(n => n.id === apiKey);
+    let existingNode = state.nodes.find(n => n.id === apiKey);
 
-    // 2. Update In-Memory Pool
+    // 2. Auto-approve if ownerKey is provided
+    const isApproved = existingNode ? existingNode.approved : (ownerKey ? true : false);
+
+    // 3. Update In-Memory Pool
     modelPool.set(apiKey, {
       name: name || 'Anonymous Network Node',
       socketId: socket.id,
       models: models || [],
       status: 'online',
-      approved: existingNode ? existingNode.approved : false,
-      lastUsedByOwner: 0,
+      approved: isApproved,
+      lastUsedByOwner: Date.now(),
       lastSeen: new Date().toISOString()
     });
 
-    // 3. Save Node Identity to disk if new
+    // 4. Save to disk if NEW node
     if (!existingNode) {
-      state.nodes.push({ id: apiKey, name, models: models || [], approved: false });
+      state.nodes.push({
+        id: apiKey,
+        name: name || null,
+        models: models || [], // CRITICAL: Save the models list!
+        approved: isApproved
+      });
       fs.writeFileSync(DATA_PATH, JSON.stringify(state, null, 2));
+      console.log(`🌐 New node registered: ${apiKey} with ${models?.length || 0} models`);
     } else {
-      // Update existing node in place
+      // Update existing node
+      existingNode.name = name;
       existingNode.models = models || [];
+      existingNode.approved = isApproved;
       fs.writeFileSync(DATA_PATH, JSON.stringify(state, null, 2));
     }
 
+    socket.emit('registration_success', {
+      apiKey,
+      message: 'Connected to The Hermes Collective.',
+      approved: isApproved
+    });
+
+    console.log(`🌐 Browser Node linked: ${name} (${apiKey}) - ${isApproved ? 'APPROVED' : 'pending'}`);
     io.emit('pool_update', getPoolList());
   });
 
