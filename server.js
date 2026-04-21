@@ -274,22 +274,7 @@ const getModelsHandler = (req, res) => {
       id: modelId,
       object: 'model',
       created: timestamp,
-      owned_by: ownerName,
-      status: 'online',
-      permission: [{
-        id: "modelperm-" + uuidv4().substr(0,8),
-        object: "model_permission",
-        created: timestamp,
-        allow_create_engine: false,
-        allow_sampling: true,
-        allow_logprobs: true,
-        allow_search_indices: false,
-        allow_view: true,
-        allow_fine_tuning: false,
-        organization: "*",
-        group: null,
-        is_blocking: false
-      }]
+      owned_by: ownerName
     };
   }
 
@@ -298,8 +283,7 @@ const getModelsHandler = (req, res) => {
       id: 'hermes-collective-awaiting-peers',
       object: 'model',
       created: now,
-      owned_by: 'system',
-      permission: []
+      owned_by: 'system'
     });
   }
 
@@ -416,7 +400,10 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+// Serve static assets from both public and dist
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(__dirname)); // Fallback for src files if serving raw
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
