@@ -32,4 +32,4 @@ DOMAIN=${SOURCE_DOMAIN:-"http://localhost:8080"}
 echo ""
 echo "✅ Hermes Hub is now screaming into the void at $DOMAIN"
 echo "🧠 Point your Hermes Agent to $DOMAIN/v1"
-echo "📡 Access the Command Center in your browser via your Proxmox IP or Tunnel."
+echo "📡 Access the Command Center in your browser."

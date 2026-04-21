@@ -234,7 +234,7 @@ let discoveredModels = [];
 async function scanLocalModels() {
   modelDiscoveryList.innerText = 'Scanning localhost:11434...';
   try {
-    const response = await fetch('http://127.0.0.1:11434/api/tags');
+    const response = await fetch('http://[IP_ADDRESS]/api/tags');
     const data = await response.json();
     discoveredModels = data.models ? data.models.map(m => m.name || m.id) : [];
 
@@ -555,7 +555,7 @@ function updateSignalCard(data, status) {
 async function handleComputeTask(data) {
   const { taskId, request } = data;
   try {
-    const response = await fetch('http://127.0.0.1:11434/v1/chat/completions', {
+    const response = await fetch('http://[IP_ADDRESS]/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request)

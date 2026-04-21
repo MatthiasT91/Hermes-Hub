@@ -74,12 +74,13 @@ io.on('connection', (socket) => {
     // 3. Save Node Identity to disk if new
     if (!existingNode) {
       state.nodes.push({ id: apiKey, name, models: models || [], approved: false });
-      //                        ^^^^^^^^^^^^^^^^^^^^^^^^ ADD THIS
+      fs.writeFileSync(DATA_PATH, JSON.stringify(state, null, 2));
+    } else {
+      // Update existing node in place
+      existingNode.models = models || [];
       fs.writeFileSync(DATA_PATH, JSON.stringify(state, null, 2));
     }
 
-    socket.emit('registration_success', { apiKey, message: 'Connected to The Hermes Collective.' });
-    console.log(`🌐 Browser Node linked: ${name} (Models: ${models?.length || 0})`);
     io.emit('pool_update', getPoolList());
   });
 
