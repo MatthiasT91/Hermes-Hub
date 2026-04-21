@@ -220,15 +220,30 @@ body.active-donor .sidebar {
 .neural-mesh {
   flex: 1;
   position: relative;
-  background: radial-gradient(circle at center, rgba(0, 245, 255, 0.05), transparent 70%);
+  background-image: url('/office_map.png');
+  background-size: cover;
+  background-position: center;
   border: 1px solid var(--border-glass);
   border-radius: 12px;
   overflow: hidden;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  padding: 2rem;
-  gap: 3rem;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 245, 255, 0.05);
+}
+
+.neural-mesh::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 5, 10, 0.6);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.workstation {
+  position: absolute;
+  font-size: 2rem;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));
+  z-index: 5;
 }
 
 .pixel-bot {
