@@ -43,6 +43,10 @@ const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const chatSendBtn = document.getElementById('chat-send-btn');
 
+// API Key Management Elements
+const apiKeyDisplay = document.getElementById('api-key-display');
+const regenerateKeyBtn = document.getElementById('regenerate-key-btn');
+
 // --- Core Initialization ---
 function init() {
   updateOnboardingUI();
@@ -179,7 +183,13 @@ socket.on('pool_update', (pool) => {
 
 socket.on('registration_success', (data) => {
   apiKey = data.apiKey;
+  const nodeId = data.nodeId;
+  
+  // Store API key for future use
   localStorage.setItem('hermes_hivemind_key', apiKey);
+  
+  // Display API key prominently
+  displayApiKey(nodeId, apiKey);
 
   joinResult.style.display = 'block';
   joinResult.style.background = 'rgba(0, 255, 157, 0.1)';
@@ -189,6 +199,10 @@ socket.on('registration_success', (data) => {
     <div style="font-size: 0.6rem; color: var(--text-secondary); margin-bottom: 0.3rem;">OPERATOR API KEY:</div>
     <div style="background: rgba(0,0,0,0.5); padding: 0.8rem; border-radius: 4px; word-break: break-all; font-size: 0.7rem; color: var(--accent-gold); border: 1px solid var(--border-glass);">
       ${apiKey}
+    </div>
+    <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(50,50,50,0.5); border-radius: 4px; font-size: 0.65rem;">
+      <strong>🔑 Node ID:</strong> ${nodeId}<br>
+      <strong>🔗 Copy this key for future authentication</strong>
     </div>
   `;
 
@@ -203,6 +217,112 @@ socket.on('stats_update', (data) => {
   totalSignals = data.total;
   totalSignalsEl.innerText = totalSignals;
 });
+
+// --- API Key Display ---
+function displayApiKey(nodeId, apiKey) {
+  if (!apiKeyDisplay) return;
+  
+  apiKeyDisplay.style.display = 'block';
+  apiKeyDisplay.innerHTML = `
+    <div style="padding: 1rem; background: rgba(0, 255, 157, 0.1); border: 1px solid var(--status-online); border-radius: 8px;">
+      <div style="font-size: 0.7rem; color: var(--status-online); margin-bottom: 0.5rem;">🔑 YOUR API KEY</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--accent-gold); word-break: break-all;">
+        ${apiKey}
+      </div>
+      <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.3rem;">
+        Node ID: ${nodeId}<br>
+        Keep this key secure — you'll need it to authenticate requests
+      </div>
+      ${regenerateKeyBtn ? `
+      <div style="margin-top: 0.5rem;">
+        <button id="regenerate-key-btn" style="font-size: 0.6rem; padding: 0.3rem 0.6rem; background: var(--status-offline); color: white; border: none; border-radius: 4px; cursor: pointer;">
+          🔑 Regenerate API Key
+        </button>
+      </div>
+      ` : ''}
+    </div>
+  `;
+
+  // Add regenerate button functionality
+  if (regenerateKeyBtn) {
+    regenerateKeyBtn.onclick = regenerateApiKey;
+  }
+}
+
+// --- API Key Regeneration ---
+async function regenerateApiKey() {
+  if (!apiKeyDisplay) return;
+
+  const confirmBtn = regenerateKeyBtn;
+  confirmBtn.disabled = true;
+  confirmBtn.innerText = '⏳ Generating...';
+
+  const resultDiv = document.createElement('div');
+  resultDiv.style.cssText = 'margin-top: 0.5rem; padding: 0.5rem; background: rgba(255, 193, 7, 0.2); border-radius: 4px; font-size: 0.65rem;';
+  resultDiv.innerHTML = '🔄 Requesting new API key from server...';
+
+  try {
+    // Send request to regenerate key
+    const response = await fetch('/api/admin/regenerate-key', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}` // Use current key to authenticate
+      },
+      body: JSON.stringify({ nodeId: document.getElementById('node-id-display')?.innerText || '' })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      const newApiKey = data.newKey;
+      const oldKeys = data.oldKeys || [];
+
+      // Update localStorage
+      localStorage.setItem('hermes_hivemind_key', newApiKey);
+      apiKey = newApiKey;
+
+      // Show success message
+      resultDiv.style.background = 'rgba(0, 255, 157, 0.2)';
+      resultDiv.innerHTML = `
+        <strong>✅ New API Key Generated!</strong><br>
+        Old keys: ${oldKeys.length} key(s)<br>
+        New key: ${newApiKey}<br>
+        <strong>Save this new key immediately!</strong>
+      `;
+
+      // Update display
+      apiKeyDisplay.innerHTML = `
+        <div style="font-size: 0.7rem; color: var(--status-online); margin-bottom: 0.5rem;">🔑 NEW API KEY</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--accent-gold); word-break: break-all;">
+          ${newApiKey}
+        </div>
+        <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.3rem;">
+          Node ID: ${nodeId}<br>
+          Your old key(s) have been deactivated
+        </div>
+        ${regenerateKeyBtn ? `
+        <div style="margin-top: 0.5rem;">
+          <button id="regenerate-key-btn" style="font-size: 0.6rem; padding: 0.3rem 0.6rem; background: var(--status-offline); color: white; border: none; border-radius: 4px; cursor: pointer;">
+            🔑 Regenerate API Key
+          </button>
+        </div>
+        ` : ''}
+      `;
+
+      // Reattach event listener
+      if (regenerateKeyBtn) {
+        regenerateKeyBtn.onclick = regenerateApiKey;
+      }
+    } else {
+      resultDiv.innerHTML = `❌ Error: ${data.error || 'Failed to regenerate key'}`;
+    }
+  } catch (error) {
+    resultDiv.innerHTML = `❌ Network error: ${error.message}`;
+  }
+
+  apiKeyDisplay.appendChild(resultDiv);
+}
 
 // --- UI Logic ---
 function updateOnboardingUI() {
@@ -295,7 +415,7 @@ function renderPool(pool) {
 // --- Visual Mesh ---
 const neuralMesh = document.getElementById('neural-mesh');
 const botMap = new Map();
-const avatarPool = ['🐕', '🐈', '🐦', '🦊', '🦉', '🐸', '🐢', '🦖'];
+const avatarPool = ['🐕', '🐈', '🦊', '🦉', '🐸', '🐢', '🦖'];
 
 // Virtual Office Layout
 const workstations = [
@@ -494,7 +614,10 @@ async function sendChatMessage() {
   try {
     const response = await fetch('/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey || 'public_tester'}` },
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Authorization': `Bearer ${apiKey || 'public_tester'}` 
+      },
       body: JSON.stringify({ model, messages: [{ role: 'user', content }] })
     });
     const data = await response.json();
