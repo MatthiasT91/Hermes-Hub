@@ -1,0 +1,55 @@
+# 🏛️ Hermes Hub: Browser-Based Hivemind - Implementation Plan
+
+## 🎯 Vision
+A decentralized network where users contribute compute power simply by leaving a browser tab open. The UI uses standard `fetch()` to talk to the local AI engine and WebSockets to tunnel the data back to the central Hub. No Cloudflare tunnels or port forwarding needed.
+
+---
+
+## 🧱 The Architecture Pivot
+
+### Phase 1: The Contributor Experience (Frontend) ✅ DONE
+> **Goal**: Users can connect their local models to the Hub directly from the website UI via localhost routing.
+
+- [x] **The "Hivemind" Tab**: UI elements for users to "Connect Local Node".
+- [x] **Local Model Discovery**: The browser makes a `fetch("http://127.0.0.1:11434/api/tags")` request.
+- [x] **Socket Registration**: Browser emits `socket.emit("register_browser_node", { models, ownerKey })`.
+- [x] **Step-by-Step UI**: Premium, 3-step onboarding flow for Operator Identity and Pulsing.
+
+### Phase 2: The Hub Routing Logic (Backend) ✅ DONE
+> **Goal**: Route REST API agent queries across the WebSocket network.
+
+- [x] **WebSockets over HTTP**: Pool management via active WebSocket `socket.id` assignments.
+- [x] **The Relay Process**: 
+   - `[Agent Post]` → `/v1/chat/completions` receives query.
+   - `[Identity Lookup]` → Locate active `socket.id` (browser tab) hosting the model.
+   - `[Emit Task]` → Emit `compute_task` via WebSockets to specific browser.
+   - `[Promise Wait]` → Express connection pauses with a 2-minute timeout wrapper.
+   - `[Return result]` → Browser emits `task_result` back to Hub.
+
+### Phase 3: Enforcing the 5-Minute Owner Lock ✅ DONE
+> **Goal**: Maintain the "Owner is King" rule in the new WebSocket environment.
+
+- [x] **Owner Tagging**: Contributors provide their custom API Key to mark ownership.
+- [x] **Priority Routing**: Owner gets instant, uninterrupted access to their own node.
+- [x] **Network Borrowers**: If an anonymous user requests the node, Hub checks `lastUsedByOwner`.
+- [x] **423 Locked**: Block borrowers if owner active in last 5 minutes.
+
+### Phase 4: Zero-Knowledge Security (E2EE) ← CURRENT FOCUS
+> **Goal**: The Hub relays encrypted noise. Only the client and the node can see the chat.
+
+- [ ] **AES Shared Keys**: Operators generate an 'Encryption Secret' during Pulse.
+- [ ] **Public Key Exchange**: Chatters use the Operator's public key to encrypt prompts.
+- [ ] **Zero-Visibility Relay**: The Hub server relays base64 blobs without ever seeing the prompt text.
+
+### Phase 5: The Dual-Sidebar Experience (Chat Hub) ✅ DONE
+- [x] **Dual-Sidebar Layout**: Left for Control, Right for the Forge (Chat).
+- [x] **The Forge**: Integrated chat interface with model selection.
+- [x] **Collective UI**: Rebranded network to "The Hermes Collective".
+
+### Phase 7: The Neural Mesh Visualizer (Pixel Collective) ← CURRENT FOCUS
+> **Goal**: Turn the network into a living, breathing ecosystem of visual activity.
+
+- [ ] **Pixel Avatars**: Every node in the Collective is assigned a unique, blocky pixel character.
+- [ ] **Signal Arcs**: Replace JSON logs with visual "Light Beams" traveling between users and models.
+- [ ] **Sprite Activity**: Characters pulse or "think" when processing compute tasks.
+- [ ] **Dynamic Mesh**: Nodes arrange themselves in a spatial grid that expands as the network grows.

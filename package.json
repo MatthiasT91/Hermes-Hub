@@ -1,6 +1,6 @@
 {
   "name": "hermes-distributed-network",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,6 +14,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.3",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "uuid": "^14.0.0"

@@ -8,6 +8,12 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
+import jwt from 'jsonwebtoken';
+
+// Import user authentication modules
+import userAuthRouter from './routes/user-auth.js';
+import { authenticateToken } from './middleware/auth.js';
+import { getUserProfile, getUserApiKeys, addApiKey } from './models/user-profile.js';
 
 dotenv.config();
 
@@ -60,22 +66,22 @@ const apiKeyRegistry = new Map();
 io.on('connection', (socket) => {
   socket.on('register_browser_node', (data) => {
     const { ownerKey, name, models } = data;
-    
+
     // Generate a unique API key for this node if none provided
     const apiKey = ownerKey || uuidv4();
     const nodeId = `node-${Date.now()}-${apiKey.substring(0, 8)}`;
-    
+
     console.log(`🔑 Generating API key for ${name}: ${apiKey}`);
     console.log(`📝 Node ID: ${nodeId}`);
     console.log(`🔐 Admin token: ${process.env.HERMES_AUTH_TOKEN.substring(0, 8)}... (separate)`);
-    
+
     // 1. Get or create node from persistent state
     const state = getState();
     let existingNode = state.nodes.find(n => n.id === apiKey);
-    
+
     // 2. Auto-approve if ownerKey is provided
     const isApproved = existingNode ? existingNode.approved : (ownerKey ? true : false);
-    
+
     // 3. Update In-Memory Pool
     modelPool.set(apiKey, {
       name: name || 'Anonymous Network Node',
@@ -86,7 +92,7 @@ io.on('connection', (socket) => {
       lastUsedByOwner: Date.now(),
       lastSeen: new Date().toISOString()
     });
-    
+
     // 4. Register the API key
     apiKeyRegistry.set(apiKey, {
       nodeId,
@@ -94,7 +100,7 @@ io.on('connection', (socket) => {
       registeredAt: Date.now(),
       isActive: true
     });
-    
+
     // 5. Save to disk if NEW node
     if (!existingNode) {
       state.nodes.push({
@@ -112,14 +118,14 @@ io.on('connection', (socket) => {
       existingNode.approved = isApproved;
       fs.writeFileSync(DATA_PATH, JSON.stringify(state, null, 2));
     }
-    
+
     socket.emit('registration_success', {
       apiKey,
       nodeId,
       message: 'Connected to The Hermes Collective.',
       approved: isApproved
     });
-    
+
     console.log(`🌐 Browser Node linked: ${name} (${apiKey}) - ${isApproved ? 'APPROVED' : 'pending'}`);
     io.emit('pool_update', getPoolList());
   });
@@ -155,13 +161,13 @@ app.post('/v1/chat/completions', async (req, res) => {
   // 1. Authenticate Request
   const authHeader = req.headers.authorization;
   const rawToken = authHeader?.replace('Bearer ', '') || '';
-  
+
   // Check Admin Access (uses HERMES_AUTH_TOKEN from .env)
   const isAdmin = process.env.HERMES_AUTH_TOKEN && rawToken === process.env.HERMES_AUTH_TOKEN;
-  
+
   // Check if this is a registered node API key
   const isRegisteredNode = modelPool.has(rawToken);
-  
+
   if (!isAdmin && !isRegisteredNode) {
     console.warn(`🛑 Unauthorized access attempt from ${req.ip}`);
     return res.status(401).json({ error: { message: "Unauthorized: Invalid API Key. Please join the network to receive a key." } });
@@ -458,7 +464,7 @@ app.get('/api/admin/my-keys', requireAdmin, (req, res) => {
 // Regenerate API key for a node (requires admin auth)
 app.post('/api/admin/regenerate-key', requireAdmin, (req, res) => {
   const { nodeId } = req.body;
-  
+
   // Find the node by its nodeId
   const matchingKeys = [];
   apiKeyRegistry.forEach((info, key) => {
@@ -466,7 +472,7 @@ app.post('/api/admin/regenerate-key', requireAdmin, (req, res) => {
       matchingKeys.push({ key, ...info });
     }
   });
-  
+
   if (matchingKeys.length === 0) {
     return res.status(404).json({ error: 'Node not found.' });
   }
@@ -479,10 +485,10 @@ app.post('/api/admin/regenerate-key', requireAdmin, (req, res) => {
     registeredAt: Date.now(),
     isActive: true
   };
-  
+
   // Update registry
   apiKeyRegistry.set(newApiKey, newKeyInfo);
-  
+
   // Update node metadata (but keep it online)
   matchingKeys.forEach(({ key }) => {
     const node = modelPool.get(key);
@@ -492,7 +498,7 @@ app.post('/api/admin/regenerate-key', requireAdmin, (req, res) => {
   });
 
   console.log(`🔑 New API key generated: ${newApiKey}`);
-  
+
   res.json({
     success: true,
     message: 'New API key generated successfully.',
@@ -509,10 +515,10 @@ app.post('/api/security/generate', (req, res) => {
 
     // Replace or add HERMES_AUTH_TOKEN
     let newEnv;
-    if (envContent.includes('HERMES_AUTH_TOKEN=')) {
-      newEnv = envContent.replace(/HERMES_AUTH_TOKEN=.*/, 'HERMES_AUTH_TOKEN=***\n');
+    if (envContent.includes('HERMES_AUTH_TOKEN=***') || envContent.includes('HERMES_AUTH_TOKEN=')) {
+      newEnv = envContent.replace(/HERMES_AUTH_TOKEN=[^]*/g, `HERMES_AUTH_TOKEN=${newToken}`);
     } else {
-      newEnv = envContent + '\nHERMES_AUTH_TOKEN=***\n';
+      newEnv = envContent + '\nHERMES_AUTH_TOKEN=' + newToken;
     }
 
     fs.writeFileSync('.env', newEnv);
@@ -539,6 +545,9 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
+// ✅ USER AUTHENTICATION ROUTES - Add these before starting server
+app.use('/api/auth', userAuthRouter);
+
 httpServer.listen(PORT, () => {
   const domain = process.env.NETWORK_DOMAIN || 'http://localhost:' + PORT;
   console.log(`🏛️  Hermes Gateway Hub online at ${domain}`);
@@ -546,4 +555,5 @@ httpServer.listen(PORT, () => {
   console.log(`🛡️  Security Status: ${process.env.HERMES_AUTH_TOKEN ? 'TOKEN AUTH ENABLED' : 'WIDE OPEN (NOT RECOMMENDED)'}`);
   console.log(`🔑  Admin Token: ${process.env.HERMES_AUTH_TOKEN.substring(0, 8)}...`);
   console.log(`📊  API Key Registry: ${apiKeyRegistry.size} keys registered`);
+  console.log(`👤  User Profiles: Stored in user_profiles.json`);
 });
