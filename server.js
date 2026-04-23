@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 
 // Import user authentication modules
-import userAuthRouter from './routes/user-auth.js';
+import { app as userAuthApp } from './routes/user-auth.js';
 import { authenticateToken } from './middleware/auth.js';
 import { getUserProfile, getUserApiKeys, addApiKey } from './models/user-profile.js';
 
@@ -158,21 +158,97 @@ io.on('connection', (socket) => {
 
 // 🛰️ Phase 2: Intelligent Routing & Idle Logic
 app.post('/v1/chat/completions', async (req, res) => {
-  // 1. Authenticate Request
+  // 🔐 1. JWT Authentication
   const authHeader = req.headers.authorization;
-  const rawToken = authHeader?.replace('Bearer ', '') || '';
 
-  // Check Admin Access (uses HERMES_AUTH_TOKEN from .env)
-  const isAdmin = process.env.HERMES_AUTH_TOKEN && rawToken === process.env.HERMES_AUTH_TOKEN;
-
-  // Check if this is a registered node API key
-  const isRegisteredNode = modelPool.has(rawToken);
-
-  if (!isAdmin && !isRegisteredNode) {
-    console.warn(`🛑 Unauthorized access attempt from ${req.ip}`);
-    return res.status(401).json({ error: { message: "Unauthorized: Invalid API Key. Please join the network to receive a key." } });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.warn(`🛑 Missing authorization header from ${req.ip}`);
+    return res.status(401).json({ error: { message: "Unauthorized: Missing authorization header" } });
   }
 
+  const token = authHeader.replace('Bearer ', '');
+
+  // Verify JWT token
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || JWT_SECRET);
+    req.user = decoded;
+  } catch (err) {
+    console.warn(`🛑 Invalid JWT token from ${req.ip}:`, err.message);
+    return res.status(401).json({ error: { message: "Unauthorized: Invalid or expired JWT token" } });
+  }
+
+  // 🔐 2. Verify API Key Against User Profile
+  const apiKey = req.user.apiKey;
+  const userId = req.user.userId;
+
+  // Get user profile and verify API key exists
+  const user = getUserProfile(userId);
+  const userApiKeys = getUserApiKeys(userId);
+
+  if (!userApiKeys[apiKey]) {
+    console.warn(`🛑 Invalid API key for user ${userId} from ${req.ip}`);
+    return res.status(403).json({ error: { message: "Forbidden: Invalid API key" } });
+  }
+
+  // Check if API key is active
+  if (!userApiKeys[apiKey].isActive) {
+    console.warn(`🛑 Inactive API key for user ${userId} from ${req.ip}`);
+    return res.status(403).json({ error: { message: "Forbidden: API key has been deactivated" } });
+  }
+
+  // 🔐 3. Admin Override (using HERMES_AUTH_TOKEN from .env)
+  const adminToken = process.env.HERMES_AUTH_TOKEN || '';
+  const isAdmin = adminToken && req.user.adminToken === adminToken;
+
+  if (isAdmin) {
+    console.log(`👑 Admin request from ${req.ip}`);
+  }
+
+  // 4. Log successful authentication
+  console.log(`✅ Authenticated: User ${userId}, API Key ${apiKey.substring(0, 8)}...`);
+
+  // Continue with existing request processing...
+  // 🔐 4. Verify API key against remote registry (optional - configurable)
+  const VERIFY_API_KEYS = process.env.VERIFY_API_KEYS === 'true';
+  const REMOTE_API_URL = process.env.REMOTE_API_URL || 'https://api.hermes.network/verify';
+
+  if (VERIFY_API_KEYS) {
+    try {
+      const verifyResponse = await axios.post(
+        REMOTE_API_URL,
+        { apiKey, userId },
+        { timeout: 2000 }
+      );
+      if (!verifyResponse.data.valid) {
+        console.warn(`🛑 Remote verification failed for user ${userId}`);
+        return res.status(403).json({ error: { message: "Forbidden: API key verification failed" } });
+      }
+    } catch (err) {
+      // Silently fail - local verification still works
+      console.log(`⚠️ Remote key verification unavailable: ${err.message}`);
+    }
+  }
+
+  // 🔐 5. Log usage to analytics service (optional)
+  const LOG_ANALYTICS = process.env.LOG_ANALYTICS === 'true';
+  const ANALYTICS_URL = process.env.ANALYTICS_URL || 'https://analytics.hermes.network/log';
+
+  if (LOG_ANALYTICS) {
+    const analyticsData = {
+      userId,
+      apiKey: apiKey.substring(0, 8),
+      timestamp: new Date().toISOString(),
+      model: req.body.model,
+      endpoint: '/v1/chat/completions'
+    };
+
+    axios.post(ANALYTICS_URL, analyticsData).catch(err => {
+      // Silently fail - analytics not critical
+      console.log(`⚠️ Analytics logging failed: ${err.message}`);
+    });
+  }
+
+  // Continue with existing request processing...
   const requestedModel = req.body.model;
   if (!requestedModel) {
     return res.status(400).json({ error: { message: "Bad Request: No 'model' specified." } });
@@ -393,17 +469,11 @@ function getPoolList() {
 
 // Note: The HTTP ping is removed HTTP heartbeat/ping -> Socket.io handles heartbeats natively
 
-// 🛡️ Admin Middleware
-function requireAdmin(req, res, next) {
-  const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
-  if (token !== process.env.HERMES_AUTH_TOKEN) {
-    return res.status(403).json({ error: 'Admin access denied.' });
-  }
-  next();
-}
+// 🛡️ Admin Middleware - Using centralized authenticateToken
+app.use("/api/admin", authenticateToken);
 
 // 🏛️ Admin API
-app.get('/api/admin/pool', requireAdmin, (req, res) => {
+app.get('/api/admin/pool', (req, res) => {
   res.json({
     pool: getPoolList(true),
     stats: {
@@ -412,7 +482,7 @@ app.get('/api/admin/pool', requireAdmin, (req, res) => {
   });
 });
 
-app.post('/api/admin/approve', requireAdmin, (req, res) => {
+app.post('/api/admin/approve', (req, res) => {
   const { id } = req.body;
   const node = modelPool.get(id);
   if (!node) return res.status(404).json({ error: 'Node not found.' });
@@ -430,7 +500,7 @@ app.post('/api/admin/approve', requireAdmin, (req, res) => {
   res.json({ success: true, message: `${node.name} approved.` });
 });
 
-app.post('/api/admin/reject', requireAdmin, (req, res) => {
+app.post('/api/admin/reject', (req, res) => {
   const { id } = req.body;
   const node = modelPool.get(id);
   if (!node) return res.status(404).json({ error: 'Node not found.' });
@@ -441,28 +511,67 @@ app.post('/api/admin/reject', requireAdmin, (req, res) => {
   res.json({ success: true, message: `${name} removed.` });
 });
 
-// 🔐 API Key Management Endpoints
 
-// Get user's API key info (requires admin auth)
-app.get('/api/admin/my-keys', requireAdmin, (req, res) => {
-  // Find this admin's registered node keys
-  const myKeys = [];
-  apiKeyRegistry.forEach((info, key) => {
-    if (info.name.toLowerCase().includes(req.headers['x-operator-name'] || '')) {
-      myKeys.push({
-        apiKey: key,
-        nodeId: info.nodeId,
-        name: info.name,
-        registeredAt: new Date(info.registeredAt).toISOString(),
-        isActive: info.isActive
-      });
+// 🔑 Admin API - API Key Management
+// Add new API key for a user (requires admin auth)
+app.post('/api/admin/add-api-key', (req, res) => {
+  const { userId, apiKey, metadata } = req.body;
+
+  if (!userId || !apiKey) {
+    return res.status(400).json({ error: 'userId and apiKey are required.' });
+  }
+
+  try {
+    const result = addApiKey(userId, apiKey, metadata || {});
+
+    if (result.error) {
+      return res.status(404).json({ error: result.error });
     }
-  });
-  res.json({ keys: myKeys });
+
+    console.log(`🔑 Admin added API key for user ${userId}: ${apiKey.substring(0, 8)}...`);
+    res.json({ success: true, apiKey });
+  } catch (err) {
+    console.error('Error adding API key:', err);
+    res.status(500).json({ error: 'Failed to add API key.' });
+  }
 });
 
+// Revoke API key (requires admin auth)
+app.post('/api/admin/revoke-api-key', (req, res) => {
+  const { userId, apiKey } = req.body;
+
+  if (!userId || !apiKey) {
+    return res.status(400).json({ error: 'userId and apiKey are required.' });
+  }
+
+  // Check if API key exists in registry
+  const keyInfo = apiKeyRegistry.get(apiKey);
+
+  if (!keyInfo) {
+    return res.status(404).json({ error: 'API key not found.' });
+  }
+
+  // Verify the key belongs to the specified user (optional security check)
+  if (keyInfo.nodeId && !userId.includes(keyInfo.nodeId)) {
+    return res.status(403).json({ error: 'Access denied: Cannot revoke key belonging to another user.' });
+  }
+
+  // Deactivate the API key
+  keyInfo.isActive = false;
+  keyInfo.revokedAt = Date.now();
+
+  console.log(`🔒 API key revoked: ${apiKey.substring(0, 8)}... for user ${userId}`);
+
+  res.json({
+    success: true,
+    message: 'API key has been revoked and will no longer work.',
+    revokedKey: apiKey.substring(0, 8)
+  });
+});
+
+
 // Regenerate API key for a node (requires admin auth)
-app.post('/api/admin/regenerate-key', requireAdmin, (req, res) => {
+app.post('/api/admin/regenerate-key', (req, res) => {
   const { nodeId } = req.body;
 
   // Find the node by its nodeId
@@ -546,7 +655,7 @@ app.get('*', (req, res) => {
 });
 
 // ✅ USER AUTHENTICATION ROUTES - Add these before starting server
-app.use('/api/auth', userAuthRouter);
+app.use('/api/auth', userAuthApp);
 
 httpServer.listen(PORT, () => {
   const domain = process.env.NETWORK_DOMAIN || 'http://localhost:' + PORT;
