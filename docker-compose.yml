@@ -3,7 +3,7 @@ services:
     build: .
     container_name: hermes-hub
     ports:
-      - "${PORT:-8080}:${PORT:-8080}"
+      - "${PORT:-8063}:${PORT:-8063}"
     restart: always
     volumes:
       - ./network_state.json:/app/network_state.json
