@@ -339,7 +339,7 @@ app.post('/v1/chat/completions', async (req, res) => {
     res.json(responseData);
   } catch (error) {
     console.error('❌ Signal Drop:', error.message);
-    io.emit('signal_error', { id: signalId, error: error.message });
+    io.emit('signal_error', { id: taskId, error: error.message });
     res.status(502).json({ error: { message: `Relay failed communicating with node ${targetNode.name}: ${error.message}` } });
   }
 });
