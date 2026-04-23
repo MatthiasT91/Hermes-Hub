@@ -472,7 +472,7 @@ function getPoolList() {
 // 🛡️ Admin Middleware - Using centralized authenticateToken
 app.use("/api/admin", authenticateToken);
 
-// 🏛️ Admin API
+// 🏛️ Admin API 
 app.get('/api/admin/pool', (req, res) => {
   res.json({
     pool: getPoolList(true),
