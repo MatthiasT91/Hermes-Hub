@@ -1,30 +1,3 @@
 {
-  "users": {
-    "murph-k-2026-123456": {
-      "id": "murph-k-2026-123456",
-      "username": "Murph k",
-      "email": "test@test.com",
-      "createdAt": 1713916800000,
-      "settings": {
-        "models": [],
-        "preferences": {
-          "autoApprove": false,
-          "maxConcurrent": 1,
-          "notifications": true
-        },
-        "usage": {
-          "totalRequests": 0,
-          "lastActive": null
-        },
-        "apiKeys": {
-          "murph-k-2026-123456": {
-            "createdAt": 1713916800000,
-            "metadata": {},
-            "isActive": true
-          }
-        }
-      },
-      "status": "active"
-    }
-  }
+  "users": {}
 }

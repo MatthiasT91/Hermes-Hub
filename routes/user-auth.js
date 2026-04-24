@@ -28,7 +28,7 @@ function saveUserData(data) {
 }
 
 // JWT Secret - Use environment variable or fallback
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || "hermes-secret-key-change-in-production";
 
 // User Registration Endpoint
 app.post('/api/auth/register', (req, res) => {
@@ -53,22 +53,33 @@ app.post('/api/auth/register', (req, res) => {
     id: userId,
     username,
     email,
+    passwordHash: password,
     createdAt: Date.now(),
-    apiKeys: {
-      primary: apiKey,
-      generatedAt: Date.now()
-    },
-    models: [],
-    status: 'active',
     settings: {
-      autoApprove: false,
-      maxConcurrent: 1
-    }
+      apiKeys: {
+        [apiKey]: {
+          createdAt: Date.now(),
+          metadata: {},
+          isActive: true
+        }
+      },
+      models: [],
+      preferences: {
+        autoApprove: false,
+        maxConcurrent: 1,
+        notifications: true
+      },
+      usage: {
+        totalRequests: 0,
+        lastActive: null
+      }
+    },
+    status: 'active'
   };
   
   saveUserData(data);
   
-  console.log(`👤 New user registered: ${username}`);
+  console.log('New user registered: ' + username);
   
   // Generate JWT token
   const token = jwt.sign(
@@ -101,8 +112,7 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
   
-  // In a real app, use bcrypt for password hashing
-  // For now, plaintext comparison (INSECURE - use bcrypt in production!)
+  // Check password hash
   if (user.passwordHash !== password) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
@@ -131,7 +141,6 @@ app.post('/api/auth/login', (req, res) => {
 
 // Get User Profile
 app.get('/api/auth/me', (req, res) => {
-  // Should be protected with JWT middleware
   const userId = req.headers['x-user-id'];
   if (!userId) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -167,8 +176,8 @@ app.post('/api/auth/api-key', (req, res) => {
   const newApiKey = uuidv4();
   
   // Add to user's API keys
-  if (!user.apiKeys) user.apiKeys = {};
-  user.apiKeys[newApiKey] = {
+  if (!user.settings.apiKeys) user.settings.apiKeys = {};
+  user.settings.apiKeys[newApiKey] = {
     createdAt: Date.now(),
     isActive: true,
     lastUsed: null

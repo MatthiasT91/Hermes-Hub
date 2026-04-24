@@ -16,7 +16,7 @@ import { authenticateToken } from './middleware/auth.js';
 import { getUserProfile, getUserApiKeys, addApiKey } from './models/user-profile.js';
 
 dotenv.config();
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || "4824267e17c75f79cbac4ee731abe776713ba44ba6702a737ae9b85eb144d4e8";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
