@@ -16,6 +16,7 @@ import { authenticateToken } from './middleware/auth.js';
 import { getUserProfile, getUserApiKeys, addApiKey } from './models/user-profile.js';
 
 dotenv.config();
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -186,7 +187,7 @@ app.post('/v1/chat/completions', async (req, res) => {
   // Get user profile and verify API key exists
   let user;
   let userApiKeys;
-  
+
   try {
     user = getUserProfile(userId);
     userApiKeys = getUserApiKeys(userId);

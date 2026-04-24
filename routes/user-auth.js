@@ -27,8 +27,8 @@ function saveUserData(data) {
   fs.writeFileSync(USER_DATA_PATH, JSON.stringify(data, null, 2));
 }
 
-// 🔐 JWT Secret - Use environment variable or generate one
-const JWT_SECRET = process.env.JWT_SECRET || 'hermes-secret-key-change-in-production';
+// JWT Secret - Use environment variable or fallback
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 
 // User Registration Endpoint
 app.post('/api/auth/register', (req, res) => {
@@ -102,6 +102,7 @@ app.post('/api/auth/login', (req, res) => {
   }
   
   // In a real app, use bcrypt for password hashing
+  // For now, plaintext comparison (INSECURE - use bcrypt in production!)
   if (user.passwordHash !== password) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }

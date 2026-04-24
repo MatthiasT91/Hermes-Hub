@@ -3,18 +3,18 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET=process.env.JWT_SECRET || 'hermes-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 
 // Verify JWT token
 export function authenticateToken(req, res, next) {
   const authHeader = req.headers.authorization;
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Authentication token required' });
   }
-  
+
   const token = authHeader.split(' ')[1];
-  
+
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.userId = decoded.userId;
@@ -29,21 +29,21 @@ export function authenticateToken(req, res, next) {
 // Verify API Key
 export function authenticateApiKey(req, res, next) {
   const apiKey = req.headers['x-api-key'] || req.headers.authorization?.replace('Bearer ', '');
-  
+
   if (!apiKey) {
     return res.status(401).json({ error: 'API Key required' });
   }
-  
+
   // Verify API key exists in user_profiles.json
   try {
     const userProfilesPath = path.join(__dirname, '../../user_profiles.json');
     const userProfiles = JSON.parse(fs.readFileSync(userProfilesPath, 'utf8'));
     const user = userProfiles.users[apiKey];
-    
+
     if (!user) {
       return res.status(403).json({ error: 'Invalid API Key' });
     }
-    
+
     req.userId = user.id;
     req.username = user.username;
     req.apiKey = apiKey;
