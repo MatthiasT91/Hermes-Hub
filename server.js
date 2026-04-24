@@ -16,7 +16,7 @@ import { authenticateToken } from './middleware/auth.js';
 import { getUserProfile, getUserApiKeys, addApiKey } from './models/user-profile.js';
 
 dotenv.config();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -232,7 +232,7 @@ app.post('/v1/chat/completions', async (req, res) => {
 
   // Continue with existing request processing...
   // 🔐 4. Verify API key against remote registry (optional - configurable)
-  const VERIFY_API_KEYS = process.env.VERIFY_API_KEYS === 'true';
+ const VERIFY_API_KEYS = process.env.VERIFY_API_KEYS === 'true';
   const REMOTE_API_URL = process.env.REMOTE_API_URL || 'https://api.hermes.network/verify';
 
   if (VERIFY_API_KEYS) {
@@ -647,8 +647,8 @@ app.post('/api/security/generate', (req, res) => {
 
     // Replace or add HERMES_AUTH_TOKEN
     let newEnv;
-    if (envContent.includes('HERMES_AUTH_TOKEN=***') || envContent.includes('HERMES_AUTH_TOKEN=')) {
-      newEnv = envContent.replace(/HERMES_AUTH_TOKEN=[^]*/g, `HERMES_AUTH_TOKEN=${newToken}`);
+    if (envContent.includes('HERMES_AUTH_TOKEN=')) {
+      newEnv = envContent.replace(/HERMES_AUTH_TOKEN=.*/, `HERMES_AUTH_TOKEN=${newToken}`);
     } else {
       newEnv = envContent + '\nHERMES_AUTH_TOKEN=' + newToken;
     }

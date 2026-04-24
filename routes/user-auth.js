@@ -28,7 +28,7 @@ function saveUserData(data) {
 }
 
 // JWT Secret - Use environment variable or fallback
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // User Registration Endpoint
 app.post('/api/auth/register', (req, res) => {
@@ -107,8 +107,13 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
   
+  // Generate JWT token (include apiKey if user has one)
   const token = jwt.sign(
-    { userId: user.id, username: user.username },
+    {
+      userId: user.id,
+      username: user.username,
+      apiKey: user.settings?.apiKeys ? Object.keys(user.settings.apiKeys)[0] : undefined
+    },
     JWT_SECRET,
     { expiresIn: '7d' }
   );

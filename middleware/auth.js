@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Verify JWT token
 export function authenticateToken(req, res, next) {

@@ -92,7 +92,7 @@ export function addApiKey(userId, apiKey, metadata = {}) {
     };
   }
   
-  saveProfiles({ users: data.users });
+  saveProfiles(data);
   return { success: true, apiKey };
 }
 
@@ -105,7 +105,7 @@ export function removeApiKey(userId, apiKey) {
   }
   
   delete profile.settings.apiKeys[apiKey];
-  saveProfiles({ users: data.users });
+  saveProfiles(data);
   
   return { success: true };
 }

@@ -5,19 +5,26 @@
       "username": "Murph k",
       "email": "test@test.com",
       "createdAt": 1713916800000,
-      "apiKeys": {
-        "murph-k-2026-123456": {
-          "createdAt": 1713916800000,
-          "isActive": true,
-          "lastUsed": null
+      "settings": {
+        "models": [],
+        "preferences": {
+          "autoApprove": false,
+          "maxConcurrent": 1,
+          "notifications": true
+        },
+        "usage": {
+          "totalRequests": 0,
+          "lastActive": null
+        },
+        "apiKeys": {
+          "murph-k-2026-123456": {
+            "createdAt": 1713916800000,
+            "metadata": {},
+            "isActive": true
+          }
         }
       },
-      "models": [],
-      "status": "active",
-      "settings": {
-        "autoApprove": false,
-        "maxConcurrent": 1
-      }
+      "status": "active"
     }
   }
 }
