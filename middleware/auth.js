@@ -1,6 +1,9 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'hermes-secret-key-change-in-production';
+const JWT_SECRET=process.env.JWT_SECRET || 'hermes-secret-key-change-in-production';
 
 // Verify JWT token
 export function authenticateToken(req, res, next) {
@@ -31,15 +34,23 @@ export function authenticateApiKey(req, res, next) {
     return res.status(401).json({ error: 'API Key required' });
   }
   
+  // Verify API key exists in user_profiles.json
   try {
-    // Verify API key against JWT
-    const decoded = jwt.verify(apiKey, JWT_SECRET);
-    req.userId = decoded.userId;
-    req.username = decoded.username;
+    const userProfilesPath = path.join(__dirname, '../../user_profiles.json');
+    const userProfiles = JSON.parse(fs.readFileSync(userProfilesPath, 'utf8'));
+    const user = userProfiles.users[apiKey];
+    
+    if (!user) {
+      return res.status(403).json({ error: 'Invalid API Key' });
+    }
+    
+    req.userId = user.id;
+    req.username = user.username;
     req.apiKey = apiKey;
+    req.isApiUser = true;
     next();
   } catch (error) {
-    return res.status(403).json({ error: 'Invalid API Key' });
+    return res.status(500).json({ error: 'Failed to verify API key' });
   }
 }
 
