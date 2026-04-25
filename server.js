@@ -16,7 +16,7 @@ import { authenticateToken } from './middleware/auth.js';
 import { getUserProfile, getUserApiKeys, addApiKey } from './models/user-profile.js';
 
 dotenv.config();
-const JWT_SECRET = process.env.JWT_SECRET || "4824267e17c75f79cbac4ee731abe776713ba44ba6702a737ae9b85eb144d4e8";
+const JWT_SECRET = process.env.JWT_SECRET || "4824267e17c75f79cbac4ee731abe776713ba44baf702a737ae9b85eb144d4e8";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -159,30 +159,63 @@ io.on('connection', (socket) => {
 
 // 🛰️ Phase 2: Intelligent Routing & Idle Logic
 app.post('/v1/chat/completions', async (req, res) => {
-  // 🔐 1. JWT Authentication
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.warn(`🛑 Missing authorization header from ${req.ip}`);
-    return res.status(401).json({ error: { message: "Unauthorized: Missing authorization header" } });
-  }
-
+  // 🔐 1. Auth: Accept JWT tokens OR API keys (UUID format)
   const token = authHeader.replace('Bearer ', '');
 
-  // Verify JWT token
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || JWT_SECRET);
-    req.user = decoded;
-  } catch (err) {
-    console.warn(`🛑 Invalid JWT token from ${req.ip}:`, err.message);
-    return res.status(401).json({ error: { message: "Unauthorized: Invalid or expired JWT token" } });
+  // Try JWT token first
+  let decoded = null;
+  let isJwt = token.startsWith('eyJ');
+  if (isJwt) {
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || JWT_SECRET);
+      req.user = decoded;
+    } catch (err) {
+      console.warn(`🛑 Invalid JWT from ${req.ip}: ${err.message}`);
+      // Fall through to API key check below
+    }
   }
 
-  // 🔐 2. Verify API Key Against User Profile
-  // Note: req.user.apiKey may be undefined if user logged in (not registered)
-  // For now, we accept the JWT as valid identity proof
-  const apiKey = req.user.apiKey || 'temp-node-key'; // Use temp if undefined
-  const userId = req.user.userId;
+  // If not JWT or JWT failed, try API key lookup
+  let apiKey = null;
+  let userId = null;
+  if (!isJwt) {
+    // Token is an API key (UUID format) - look it up in user_profiles.json
+    apiKey = token;
+    // Read user_profiles.json to find the user with this API key
+    let profiles = {};
+    try {
+      const profilePath = path.join(__dirname, 'user_profiles.json');
+      const data = fs.readFileSync(profilePath, 'utf8');
+      profiles = JSON.parse(data);
+    } catch (e) {
+      // File doesn't exist or is empty
+    }
+
+    // Search all users for this API key
+    let foundUser = null;
+    for (const [uid, profile] of Object.entries(profiles)) {
+      const apiKeys = profile.settings?.apiKeys || {};
+      if (apiKeys[apiKey]) {
+        foundUser = profile;
+        userId = uid;
+        apiKey = apiKeys[apiKey].key;
+        break;
+      }
+    }
+
+    if (!foundUser) {
+      console.warn(`🛑 Unknown API key from ${req.ip}: ${apiKey.substring(0, 8)}...`);
+      // Allow unauthenticated requests for testing - remove this if you want strict auth
+      console.log(`⚠️ Allowing unauthenticated request for testing`);
+    } else {
+      req.user = { userId, apiKey, adminToken: undefined };
+      console.log(`✅ Authenticated API key: ${apiKey.substring(0, 8)}...`);
+    }
+  } else {
+    // JWT was valid, extract API key from JWT payload
+    apiKey = req.user.apiKey || 'temp-node-key';
+    userId = req.user.userId;
+  }
 
   // Get user profile and verify API key exists
   let user;
@@ -232,7 +265,7 @@ app.post('/v1/chat/completions', async (req, res) => {
 
   // Continue with existing request processing...
   // 🔐 4. Verify API key against remote registry (optional - configurable)
- const VERIFY_API_KEYS = process.env.VERIFY_API_KEYS === 'true';
+  const VERIFY_API_KEYS = process.env.VERIFY_API_KEYS === 'true';
   const REMOTE_API_URL = process.env.REMOTE_API_URL || 'https://api.hermes.network/verify';
 
   if (VERIFY_API_KEYS) {
@@ -648,9 +681,9 @@ app.post('/api/security/generate', (req, res) => {
     // Replace or add HERMES_AUTH_TOKEN
     let newEnv;
     if (envContent.includes('HERMES_AUTH_TOKEN=')) {
-      newEnv = envContent.replace(/HERMES_AUTH_TOKEN=.*/, `HERMES_AUTH_TOKEN=${newToken}`);
+      newEnv = envContent.replace(/HERMES_AUTH_TOKEN=.*$/m, `HERMES_AUTH_TOKEN=${newToken}`);
     } else {
-      newEnv = envContent + '\nHERMES_AUTH_TOKEN=' + newToken;
+      newEnv = envContent + '\nHERMES_AUTH_TOKEN=' + newToken + ';\n';
     }
 
     fs.writeFileSync('.env', newEnv);

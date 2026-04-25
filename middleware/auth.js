@@ -3,7 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || "4824267e17c75f79cbac4ee731abe776713ba44ba6702a737ae9b85eb144d4e8";
+
+const JWT_SECRET = process.env.JWT_SECRET || "4824267e17c75f79cbac4ee731abe776713ba44baf702a737ae9b85eb144d4e8";
 
 // Verify JWT token
 export function authenticateToken(req, res, next) {
@@ -39,7 +40,7 @@ export function authenticateApiKey(req, res, next) {
     const userProfilesPath = path.join(__dirname, '../../user_profiles.json');
     const userProfiles = JSON.parse(fs.readFileSync(userProfilesPath, 'utf8'));
     let user = null;
-    
+
     // Search through all users to find which one has this API key
     for (const userId of Object.keys(userProfiles.users)) {
       const u = userProfiles.users[userId];

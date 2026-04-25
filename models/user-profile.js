@@ -6,7 +6,7 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const PROFILE_PATH = path.join(__dirname, '../../user_profiles.json');
+const PROFILE_PATH = path.join(__dirname, '../user_profiles.json');
 
 // Initialize if needed
 if (!fs.existsSync(PROFILE_PATH)) {
