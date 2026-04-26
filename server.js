@@ -91,7 +91,8 @@ io.on('connection', (socket) => {
       status: 'online',
       approved: isApproved,
       lastUsedByOwner: Date.now(),
-      lastSeen: new Date().toISOString()
+      lastSeen: new Date().toISOString(),
+      localOllamaUrl: localOllamaUrl || 'http://127.0.0.1:11434'
     });
 
     // 4. Register the API key
@@ -500,24 +501,38 @@ app.get('/v1/modlees', getModelsHandler);
 app.get('/models', getModelsHandler);
 
 // --- Ollama Proxy Endpoint ---
-// Routes browser requests to local Ollama instance
+// Routes browser requests to user's local Ollama instance
 app.post('/ollama/v1/chat/completions', async (req, res) => {
   const requestedModel = req.body.model;
   if (!requestedModel) {
     return res.status(400).json({ error: { message: "Bad Request: No 'model' specified." } });
   }
 
+  // Look up the node that owns this API key
+  let targetNode = null;
+  for (const [key, node] of modelPool) {
+    if (node.approved && node.status !== 'offline' && node.models.includes(requestedModel)) {
+      targetNode = node;
+      break;
+    }
+  }
+
+  if (!targetNode) {
+    return res.status(404).json({ error: { message: `No node found for model '${requestedModel}'` } });
+  }
+
   try {
-    // Forward request to local Ollama instance
+    const ollamaUrl = targetNode.localOllamaUrl || 'http://127.0.0.1:11434';
+    // Forward request to user's local Ollama instance
     const ollamaResponse = await axios.post(
-      'http://127.0.0.1:11434/v1/chat/completions',
+      ollamaUrl + '/v1/chat/completions',
       req.body,
       { timeout: 120000 } // 2 minute timeout to match server-side relay
     );
 
     res.json(ollamaResponse.data);
   } catch (error) {
-    console.error('❌ Ollama proxy failed:', error.response?.data || error.message);
+    console.error(`❌ Ollama proxy failed for ${targetNode?.name}:`, error.response?.data || error.message);
     res.status(error.response?.status || 502).json({
       error: {
         message: `Ollama connection failed: ${error.response?.statusText || error.message}`,
