@@ -1,0 +1,8 @@
+## What I've already fixed:
+1. Fixed file paths in `routes/user-auth.js` and `models/user-profile.js`
+2. Fixed file path in `server.js` line 187
+
+## Next fixes needed:
+3. Fix model discovery - make sure Ollama connection works
+4. Fix JWT secrets - make sure all files use the same secret from .env
+5. Fix user registration flow - create proper registration endpoint that persists API keys

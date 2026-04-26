@@ -1,3 +1,31 @@
 {
-  "users": {}
+  "users": {
+    "test": {
+      "id": "test",
+      "username": "test",
+      "email": "test@example.com",
+      "passwordHash": "test123",
+      "createdAt": 1777164102927,
+      "settings": {
+        "apiKeys": {
+          "8908633a-d6ab-4fec-b11f-c5e6342c154d": {
+            "createdAt": 1777164102927,
+            "metadata": {},
+            "isActive": true
+          }
+        },
+        "models": [],
+        "preferences": {
+          "autoApprove": false,
+          "maxConcurrent": 1,
+          "notifications": true
+        },
+        "usage": {
+          "totalRequests": 0,
+          "lastActive": null
+        }
+      },
+      "status": "active"
+    }
+  }
 }

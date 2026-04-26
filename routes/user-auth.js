@@ -32,7 +32,7 @@ function saveUserData(data) {
 }
 
 // User Registration Endpoint
-app.post('/api/auth/register', (req, res) => {
+app.post('/register', (req, res) => {
   const { username, email, password, apiModelKey } = req.body;
 
   if (!username || !email || !password) {
@@ -99,7 +99,7 @@ app.post('/api/auth/register', (req, res) => {
 });
 
 // User Login Endpoint
-app.post('/api/auth/login', (req, res) => {
+app.post('/login', (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -141,7 +141,7 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 // Get User Profile
-app.get('/api/auth/me', (req, res) => {
+app.get('/me', (req, res) => {
   const userId = req.headers['x-user-id'];
   if (!userId) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -161,7 +161,7 @@ app.get('/api/auth/me', (req, res) => {
 });
 
 // Generate New API Key for User
-app.post('/api/auth/api-key', (req, res) => {
+app.post('/api-key', (req, res) => {
   const userId = req.headers['x-user-id'];
   if (!userId) {
     return res.status(401).json({ error: 'Authentication required' });

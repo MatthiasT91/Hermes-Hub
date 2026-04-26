@@ -160,6 +160,7 @@ io.on('connection', (socket) => {
 // 🛰️ Phase 2: Intelligent Routing & Idle Logic
 app.post('/v1/chat/completions', async (req, res) => {
   // 🔐 1. Auth: Accept JWT tokens OR API keys (UUID format)
+  const authHeader = req.headers.authorization || 'Bearer ';
   const token = authHeader.replace('Bearer ', '');
 
   // Try JWT token first
@@ -265,7 +266,7 @@ app.post('/v1/chat/completions', async (req, res) => {
 
   // Continue with existing request processing...
   // 🔐 4. Verify API key against remote registry (optional - configurable)
-  const VERIFY_API_KEYS = process.env.VERIFY_API_KEYS === 'true';
+const VERIFY_API_KEYS = process.env.VERIFY_API_KEYS === 'true';
   const REMOTE_API_URL = process.env.REMOTE_API_URL || 'https://api.hermes.network/verify';
 
   if (VERIFY_API_KEYS) {

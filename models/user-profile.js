@@ -74,23 +74,14 @@ export function getUserApiKeys(userId) {
 
 // Add API key to user
 export function addApiKey(userId, apiKey, metadata = {}) {
-  const profile = getUserProfile(userId);
+  const data = loadProfiles();
+  const profile = data.users[userId] || getUserProfile(userId);
   
-  if (profile.settings.apiKeys) {
-    profile.settings.apiKeys[apiKey] = {
-      createdAt: Date.now(),
-      metadata,
-      isActive: true
-    };
-  } else {
-    profile.settings.apiKeys = {
-      [apiKey]: {
-        createdAt: Date.now(),
-        metadata,
-        isActive: true
-      }
-    };
-  }
+  profile.settings.apiKeys[apiKey] = {
+    createdAt: Date.now(),
+    metadata,
+    isActive: true
+  };
   
   saveProfiles(data);
   return { success: true, apiKey };
@@ -98,9 +89,10 @@ export function addApiKey(userId, apiKey, metadata = {}) {
 
 // Remove API key
 export function removeApiKey(userId, apiKey) {
-  const profile = getUserProfile(userId);
+  const data = loadProfiles();
+  const profile = data.users[userId];
   
-  if (!profile.settings.apiKeys || !profile.settings.apiKeys[apiKey]) {
+  if (!profile || !profile.settings.apiKeys || !profile.settings.apiKeys[apiKey]) {
     return { error: 'API key not found' };
   }
   
