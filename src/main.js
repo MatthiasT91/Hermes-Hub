@@ -365,6 +365,7 @@ async function scanLocalModels() {
     }
   } catch (e) {
     modelDiscoveryList.innerHTML = `<span style="color:var(--status-offline)">LOCAL AI NOT REACHABLE</span>`;
+    console.error('Ollama scan failed:', e);
   }
 }
 
@@ -675,18 +676,28 @@ function updateSignalCard(data, status) {
   }
 }
 
+// --- FIXED: Ollama relay through server ---
 async function handleComputeTask(data) {
   const { taskId, request } = data;
+  
+  // Route the Ollama request through the server so it can proxy to localhost:11434
   try {
-    const response = await fetch('http://127.0.0.1:11434/v1/chat/completions', {
+    const response = await fetch('/ollama/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request)
     });
+    
+    if (!response.ok) {
+      throw new Error(`Ollama HTTP ${response.status}: ${response.statusText}`);
+    }
+    
     const responseData = await response.json();
     socket.emit('task_result', { taskId, response: responseData });
   } catch (error) {
-    socket.emit('task_result', { taskId, error: error.message });
+    const errorMsg = error.message || 'Unknown error';
+    console.error('Ollama compute task failed:', errorMsg);
+    socket.emit('task_result', { taskId, error: errorMsg });
   }
 }
 

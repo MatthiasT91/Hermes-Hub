@@ -499,6 +499,34 @@ app.get('/v1/models', getModelsHandler);
 app.get('/v1/modlees', getModelsHandler);
 app.get('/models', getModelsHandler);
 
+// --- Ollama Proxy Endpoint ---
+// Routes browser requests to local Ollama instance
+app.post('/ollama/v1/chat/completions', async (req, res) => {
+  const requestedModel = req.body.model;
+  if (!requestedModel) {
+    return res.status(400).json({ error: { message: "Bad Request: No 'model' specified." } });
+  }
+
+  try {
+    // Forward request to local Ollama instance
+    const ollamaResponse = await axios.post(
+      'http://127.0.0.1:11434/v1/chat/completions',
+      req.body,
+      { timeout: 120000 } // 2 minute timeout to match server-side relay
+    );
+
+    res.json(ollamaResponse.data);
+  } catch (error) {
+    console.error('❌ Ollama proxy failed:', error.response?.data || error.message);
+    res.status(error.response?.status || 502).json({
+      error: {
+        message: `Ollama connection failed: ${error.response?.statusText || error.message}`,
+        details: error.response?.data || null
+      }
+    });
+  }
+});
+
 // Root /v1 endpoint for discovery
 app.get('/v1', (req, res) => {
   res.json({
